@@ -36,6 +36,7 @@ cp -r node_modules/@fortawesome/fontawesome-free/css node_modules/@fortawesome/f
 cp node_modules/html2canvas/dist/html2canvas.min.js www/vendor/html2canvas.min.js
 node -e '
 const fs = require("fs");
+const cleanAddon = (text) => text.replace(/^\s*```[a-zA-Z]\s$/gm, "");
 let html = fs.readFileSync("www/index.html", "utf8");
 html = html.replace(/https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css/g, "./fa/css/all.min.css");
 html = html.replace(/https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js/g, "./vendor/html2canvas.min.js");
@@ -45,11 +46,11 @@ html = html.replace("<img src="1000533185.png" alt="KISMET" class="h-6 object-co
 if (fs.existsSync("kismet-addon-1.html") || fs.existsSync("kismet-addon-2.html")) {
 for (const f of ["kismet-addon-1.html", "kismet-addon-2.html"]) {
 if (fs.existsSync(f)) {
-html = html.replace(/</body>/i, "\n" + fs.readFileSync(f, "utf8") + "\n</body>");
+html = html.replace(/</body>/i, "\n" + cleanAddon(fs.readFileSync(f, "utf8")) + "\n</body>");
 }
 }
 } else if (fs.existsSync("kismet-addons.html")) {
-html = html.replace(/</body>/i, "\n" + fs.readFileSync("kismet-addons.html", "utf8") + "\n</body>");
+html = html.replace(/</body>/i, "\n" + cleanAddon(fs.readFileSync("kismet-addons.html", "utf8")) + "\n</body>");
 }
 fs.writeFileSync("www/index.html", html, "utf8");
 '
