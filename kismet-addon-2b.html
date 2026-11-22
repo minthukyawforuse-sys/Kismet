@@ -1,19 +1,45 @@
-<!-- ==================== KISMET ADDON 2B: CLICKABLE MAP TRACKER & NOTI ==================== -->
+<!-- KISMET ADDON 2B: ITEM CLICK TRACKING MODAL (TRUCK / AIRPLANE / POSTBOX) & NOTI -->
 <script>
 (function initKismetAddonPartB() {
     if (window.__kismetAddon2BLoaded) return;
     window.__kismetAddon2BLoaded = true;
     const getCap = (n) => (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins[n] : null;
 
+    // 3D-Style Brand Orange & Black Vehicle Illustrations (Replaces Parcel Box)
+    const BIG_VEHICLES = {
+        Air: `<svg viewBox="0 0 64 64" class="w-16 h-16">
+            <defs><linearGradient id="ogA" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs>
+            <path d="M56 26L38 24 27 8h-6l5 16-12 1-5-6h-4l3 10-3 10h4l5-6 12 1-5 16h6l11-16 18-2c3 0 5-1.5 5-3s-2-3-5-3z" fill="url(#ogA)" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M36 28h14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+        </svg>`,
+        Land: `<svg viewBox="0 0 64 64" class="w-16 h-16">
+            <defs><linearGradient id="ogL" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs>
+            <rect x="6" y="18" width="34" height="24" rx="4" fill="url(#ogL)" stroke="#fff" stroke-width="1.5"/>
+            <path d="M40 24h11l7 8v10H40V24z" fill="#1f1f23" stroke="#f26419" stroke-width="2"/>
+            <path d="M44 27h6l4 5H44v-5z" fill="#ff8a3d" opacity="0.8"/>
+            <circle cx="18" cy="45" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/>
+            <circle cx="48" cy="45" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/>
+            <rect x="11" y="24" width="16" height="3" rx="1.5" fill="#fff" opacity="0.45"/>
+        </svg>`,
+        Post: `<svg viewBox="0 0 64 64" class="w-16 h-16">
+            <defs><linearGradient id="ogP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs>
+            <path d="M18 24c0-8 6-14 14-14s14 6 14 14v22H18V24z" fill="url(#ogP)" stroke="#fff" stroke-width="1.5"/>
+            <rect x="27" y="46" width="10" height="10" rx="2" fill="#27272a" stroke="#f26419" stroke-width="1.5"/>
+            <rect x="23" y="22" width="18" height="4" rx="2" fill="#0a0a0c"/>
+            <rect x="25" y="31" width="14" height="8" rx="1.5" fill="#fff" opacity="0.88"/>
+            <path d="M25 32l7 4.5 7-4.5" fill="none" stroke="#c4420a" stroke-width="1.6"/>
+        </svg>`
+    };
+
     let curItemId = null, curGateId = null, curTrackText = '';
-    const extractId = (t) => { const m = String(t || '').trim().match(/\b([A-Za-z]{1,4}\d{7,22}|\d{9,22})\b/); return m ? m[1].toUpperCase() : ''; };
+    const extractId = (t) => { const m = String(t || '').trim().match(/\b([A-Za-z]{1,4}\d{6,22}|\d{8,22})\b/); return m ? m[1].toUpperCase() : ''; };
     const detectCourier = (id) => {
-        if (!id) return 'Tracking ID မထည့်ရသေးပါ';
-        if (/^JT\d{9,}$/.test(id)) return 'J&T Express';
-        if (/^SF\d{9,}$/.test(id)) return 'SF Express';
-        if (/^YT\d{9,}$/.test(id)) return 'YTO Express';
-        if (/^(75|78|73|54)\d{9,}$/.test(id)) return 'ZTO Express';
-        return 'China Courier / Express';
+        if (!id) return 'Booking / Tracking Id:';
+        if (/^JT\d{8,}$/.test(id)) return 'J&T Express (极兔速递)';
+        if (/^SF\d{8,}$/.test(id)) return 'SF Express (顺丰速运)';
+        if (/^YT\d{8,}$/.test(id)) return 'YTO Express (圆通速递)';
+        if (/^(75|78|73|54)\d{8,}$/.test(id)) return 'ZTO Express (中通快递)';
+        return 'Courier Tracking Id:';
     };
 
     function findItem(itemId, gateId) {
@@ -32,26 +58,33 @@
 
     function renderModal() {
         const found = findItem(curItemId, curGateId);
-        const item = found ? found.item : { name: 'ပစ္စည်းစာရင်း', qty: 1, method: 'Air', note: '' };
+        const item = found ? found.item : { name: 'ပစ္စည်း', qty: 1, method: 'Air', note: '' };
         const gate = found ? found.gate : null;
-        const m = item.method || 'Air';
+        const m = BIG_VEHICLES[item.method] ? item.method : 'Air';
         const emoji = m === 'Air' ? '✈️' : (m === 'Post' ? '📮' : '🚚');
-        let pct = 25, sub = 'တရုတ် ➔ လားရှိုး လမ်းပေါ်', sum = 'လားရှိုးသို့ ပို့ဆောင်နေဆဲ';
-        if (gate && gate.checked) { pct = 100; sub = 'ရန်ကုန် ရောက်ရှိပြီး'; sum = 'ပြီးစီးပြီ (' + (gate.checkedAt || gate.date) + ')'; }
-        else if (gate) { pct = 82; sub = gate.gate + ' သို့ တင်ပို့ပြီး'; sum = 'ရန်ကုန်သို့ ပို့ဆောင်နေဆဲ'; }
-        else if (item.arrived) { pct = 55; sub = 'လားရှိုးဂိတ် ရောက်ရှိပြီး'; sum = 'လားရှိုးရောက်ပြီး • ' + m; }
 
-        document.getElementById('ktmHeroSub').innerText = sub;
-        document.getElementById('ktmPctLabel').innerText = pct + '%';
-        document.getElementById('ktmDestPill').innerText = gate ? gate.gate : 'ရန်ကုန်';
-        document.getElementById('ktmStageSummary').innerText = sum;
-        document.getElementById('ktmBarIcon').innerText = emoji;
+        let pct = 28, pill = 'Transit';
+        if (gate && gate.checked) { pct = 100; pill = 'ရန်ကုန်ရောက်'; }
+        else if (gate) { pct = 82; pill = 'ကားဂိတ်တင်ပြီး'; }
+        else if (item.arrived) { pct = 55; pill = 'လားရှိုးရောက်'; }
+
+        const destText = gate ? gate.gate : 'ရန်ကုန်';
+        document.getElementById('ktmStatusPill').innerText = pill;
+        document.getElementById('ktmDestPill').innerText = destText;
+        document.getElementById('ktmGridTo').innerText = destText;
         document.getElementById('ktmMapVehicleEmoji').textContent = emoji;
 
-        const bf = document.getElementById('ktmBarFill'), bt = document.getElementById('ktmBarTruck');
-        bf.style.width = '5%'; bt.style.left = '5%';
-        requestAnimationFrame(() => requestAnimationFrame(() => { bf.style.width = pct + '%'; bt.style.left = pct + '%'; }));
+        // 3-Step Indicator States
+        const s2 = document.getElementById('ktmStep2'), s3 = document.getElementById('ktmStep3');
+        const l1 = document.getElementById('ktmLine1'), l2 = document.getElementById('ktmLine2');
+        const arrivedLS = Boolean(item.arrived || gate);
+        const doneYG = Boolean(gate && gate.checked);
+        s2.className = 'ktm-step-dot ' + (arrivedLS ? 'done' : 'active');
+        l1.className = 'ktm-step-line ' + (arrivedLS ? 'done' : '');
+        s3.className = 'ktm-step-dot ' + (doneYG ? 'done' : (gate ? 'active' : ''));
+        l2.className = 'ktm-step-line ' + (doneYG ? 'done' : '');
 
+        // Map Path & Vehicle Animation
         const ap = document.getElementById('ktmActivePath'), vg = document.getElementById('ktmMapVehicle');
         if (ap && vg && typeof ap.getTotalLength === 'function') {
             const len = ap.getTotalLength(), tgt = len * (pct / 100), pt = ap.getPointAtLength(tgt);
@@ -61,27 +94,21 @@
             requestAnimationFrame(() => { ap.style.transition = ''; ap.style.strokeDashoffset = String(Math.max(0, len - tgt)); });
         }
 
+        // Info Grid + Dynamic Big Vehicle Illustration (Air / Land / Post)
         const ex = extractId(item.note);
         curTrackText = ex || (item.note ? String(item.note).trim() : '');
         document.getElementById('ktmCourierName').innerText = detectCourier(ex);
-        document.getElementById('ktmTrackIdDisplay').innerText = curTrackText || 'Tracking ID မရှိသေးပါ';
+        document.getElementById('ktmTrackIdDisplay').innerText = curTrackText || 'ID မထည့်ရသေးပါ';
         document.getElementById('ktmTrackInput').value = item.note || '';
-        document.getElementById('ktmItemName').innerText = `${item.name || 'ပစ္စည်း'} (Qty: ${item.qty || 1})`;
-        document.getElementById('ktmItemMethodBadge').innerText = `${emoji} ${m}`;
-        document.getElementById('ktmItemMeta').innerText = [item.source && `🛍️ ${item.source}`, item.buyer && `👤 ${item.buyer}`, item.kg && `⚖️ ${item.kg} Kg`].filter(Boolean).join(' • ') || 'တရုတ် - လားရှိုး - ရန်ကုန်';
-
-        const steps = [
-            { done: Boolean(gate && gate.checked), active: Boolean(gate && !gate.checked), t: 'ရန်ကုန် ရောက်ရှိမှု', d: gate ? `${gate.gate} (${gate.date})` : 'ကားဂိတ် မတင်ရသေးပါ' },
-            { done: Boolean(item.arrived || gate), active: Boolean(item.arrived && !gate), t: 'လားရှိုးဂိတ်', d: (item.arrived || gate) ? `လားရှိုးရောက်ပြီး (${m})` : 'လားရှိုးသို့ သွားနေဆဲ' },
-            { done: true, active: !item.arrived && !gate, t: 'တရုတ် မှာယူစာရင်း', d: `${item.source || 'China'} • ${curTrackText || 'No ID'}` }
-        ];
-        const esc = typeof escapeHTML === 'function' ? escapeHTML : (s => String(s || ''));
-        document.getElementById('ktmTimelineList').innerHTML = steps.map((s, idx) => `
-            <div class="relative pl-5 ${idx < steps.length - 1 ? 'pb-3 border-l border-neutral-800' : ''}">
-                <span class="absolute -left-[6px] top-0.5 w-3 h-3 rounded-full ${s.done ? 'bg-orange-500 ring-4 ring-orange-500/20' : s.active ? 'bg-orange-400 animate-pulse' : 'bg-neutral-700'}"></span>
-                <div class="text-xs font-extrabold ${s.done || s.active ? 'text-orange-400' : 'text-neutral-400'}">${esc(s.t)}</div>
-                <div class="text-[11px] text-neutral-300 mt-0.5">${esc(s.d)}</div>
-            </div>`).join('');
+        document.getElementById('ktmGridCustomer').innerText = item.buyer || '-';
+        const costVal = Number(item.fee) || Number(item.price) || 0;
+        document.getElementById('ktmGridCost').innerText = costVal > 0 ? costVal.toLocaleString() + ' Ks' : '0 Ks';
+        document.getElementById('ktmGridQty').innerText = `${item.qty || 1} ခု`;
+        document.getElementById('ktmGridKg').innerText = `${item.kg || 0} Kg`;
+        document.getElementById('ktmBigVehicleSvg').innerHTML = BIG_VEHICLES[m];
+        document.getElementById('ktmBigVehicleLabel').innerText = m === 'Air' ? 'လေယာဉ် (Air)' : (m === 'Post' ? 'စာတိုက်ပုံး (Post)' : 'ကား (Land)');
+        document.getElementById('ktmItemName').innerText = item.name || 'ပစ္စည်း';
+        document.getElementById('ktmItemSource').innerText = `${item.source || 'China'} • ${pill}`;
     }
 
     window.openKismetTrackModal = function(itemId, gateId) {
@@ -89,11 +116,9 @@
         renderModal();
         const modal = document.getElementById('kismetTrackModal');
         if (modal) modal.classList.remove('hidden');
+        try { const H = getCap('Haptics'); if (H && H.impact) H.impact({ style: 'LIGHT' }); } catch (e) {}
     };
-    window.closeKismetTrackModal = function() {
-        const modal = document.getElementById('kismetTrackModal');
-        if (modal) modal.classList.add('hidden');
-    };
+    window.closeKismetTrackModal = function() { const m = document.getElementById('kismetTrackModal'); if (m) m.classList.add('hidden'); };
     window.copyActiveTrackId = function() {
         if (!curTrackText) { if (typeof showToast === 'function') showToast('Tracking ID မရှိသေးပါ'); return; }
         if (typeof copyTextToClipboard === 'function') copyTextToClipboard(curTrackText);
@@ -105,7 +130,7 @@
         if (typeof renderAll === 'function') renderAll();
         if (found.gate && typeof renderGateDetail === 'function') renderGateDetail();
         renderModal();
-        if (typeof showToast === 'function') showToast('သိမ်းဆည်းပြီးပါပြီ');
+        if (typeof showToast === 'function') showToast('✅ Tracking ID သိမ်းဆည်းပြီးပါပြီ');
     };
     window.openExternalTrack = function(p) {
         const id = extractId(document.getElementById('ktmTrackInput').value) || curTrackText;
@@ -113,38 +138,70 @@
         window.open(p === 'kuaidi' ? `https://m.kuaidi100.com/result.jsp?nu=${encodeURIComponent(id)}` : `https://t.17track.net/en#nums=${encodeURIComponent(id)}`, '_blank', 'noopener');
     };
 
-    // Universal click binding on any "Track" button in DOM so it ALWAYS opens the modal
-    function bindAllTrackButtons() {
-        document.querySelectorAll('button').forEach(btn => {
-            if (btn.closest('#kismetTrackModal')) return;
-            const txt = (btn.innerText || '').trim();
-            if (!/\bTrack\b/i.test(txt)) return;
-            let itemId = null, gateId = null;
-            const card = btn.closest('div[class*="rounded-2xl"], div[class*="rounded-xl"]');
-            if (card) {
-                const match = (card.innerHTML || '').match(/(?:transferToShop|setShippingMethod|toggleLashioArrival|editGateItemKg)\('([^']+)'/);
-                if (match) itemId = match[1];
+    // MAKE ITEM CARDS CLICKABLE + ADD ORANGE TRACK BUTTONS
+    function bindItemCardsAndButtons() {
+        // Page 1 Order Cards
+        document.querySelectorAll('#orderListContainer button[onclick^="transferToShop("]').forEach(btn => {
+            const m = (btn.getAttribute('onclick') || '').match(/transferToShop\('([^']+)'\)/); if (!m) return;
+            const id = m[1], card = btn.closest('div[class*="rounded-"]');
+            if (card && !card.dataset.ktmBound) {
+                card.dataset.ktmBound = '1'; card.style.cursor = 'pointer';
+                card.addEventListener('click', (e) => { if (!e.target.closest('button,input,select,a')) window.openKismetTrackModal(id); });
             }
-            if (typeof activeGateId !== 'undefined') gateId = activeGateId;
-            btn.onclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); window.openKismetTrackModal(itemId, gateId); };
+            const p = btn.parentElement;
+            if (p && !p.querySelector('.ktm-inject-btn')) {
+                p.classList.add('gap-1.5', 'flex-wrap');
+                const b = document.createElement('button'); b.type = 'button';
+                b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-lg bg-orange-600/20 text-orange-400 border border-orange-500/45 text-[10px] font-extrabold btn-bounce flex items-center gap-1';
+                b.innerHTML = '<i class="fa-solid fa-location-dot"></i> Track မြေပုံ';
+                b.onclick = (e) => { e.stopPropagation(); window.openKismetTrackModal(id); };
+                p.appendChild(b);
+            }
+        });
+        // Page 2 Lashio Check Cards
+        document.querySelectorAll('#lashioCheckList button[onclick^="setShippingMethod("]').forEach(btn => {
+            const m = (btn.getAttribute('onclick') || '').match(/setShippingMethod\('([^']+)',\s*'Air'\)/); if (!m) return;
+            const id = m[1], card = btn.closest('div[class*="rounded-"]');
+            if (card && !card.dataset.ktmBound) {
+                card.dataset.ktmBound = '1'; card.style.cursor = 'pointer';
+                card.addEventListener('click', (e) => { if (!e.target.closest('button,input,select,a')) window.openKismetTrackModal(id); });
+            }
+            const row = btn.parentElement && btn.parentElement.parentElement;
+            if (row && !row.querySelector('.ktm-inject-btn')) {
+                const b = document.createElement('button'); b.type = 'button';
+                b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-xl bg-[#0a0a0c] text-orange-400 border border-orange-500/50 text-[11px] font-extrabold btn-bounce shrink-0 flex items-center gap-1';
+                b.innerHTML = '<i class="fa-solid fa-location-dot"></i> Track';
+                b.onclick = (e) => { e.stopPropagation(); window.openKismetTrackModal(id); };
+                row.appendChild(b);
+            }
+        });
+        // Gate Detail Cards
+        document.querySelectorAll('#gateDetailBody input[onchange^="editGateItemKg("]').forEach(inp => {
+            const m = (inp.getAttribute('onchange') || '').match(/editGateItemKg\('([^']+)'/); if (!m) return;
+            const id = m[1], card = inp.closest('div[class*="rounded-"]');
+            if (card && !card.dataset.ktmBound) {
+                card.dataset.ktmBound = '1'; card.style.cursor = 'pointer';
+                card.addEventListener('click', (e) => { if (!e.target.closest('button,input,select,a')) window.openKismetTrackModal(id, typeof activeGateId !== 'undefined' ? activeGateId : null); });
+            }
         });
     }
 
+    // NATIVE NOTIFICATIONS & VIBRATION
     let notiReady = false;
     async function initNoti() {
         const LN = getCap('LocalNotifications'); if (!LN || notiReady) return;
         try {
             const p = await LN.checkPermissions(); if (p.display !== 'granted') await LN.requestPermissions();
-            if (typeof LN.createChannel === 'function') await LN.createChannel({ id: 'kismet_live_alerts', name: 'KISMET Alerts', importance: 4, visibility: 1, vibration: true });
+            if (LN.createChannel) await LN.createChannel({ id: 'kismet_live_alerts', name: 'KISMET Alerts', importance: 4, visibility: 1, vibration: true });
             notiReady = true;
         } catch (e) {}
     }
 
-    if (typeof window.updateNavigationUI === 'function') { const o = window.updateNavigationUI; window.updateNavigationUI = function() { const r = o.apply(this, arguments); if (window.KISMET_AFTER_NAV) window.KISMET_AFTER_NAV(); bindAllTrackButtons(); return r; }; }
-    if (typeof window.switchKgRouteTab === 'function') { const o = window.switchKgRouteTab; window.switchKgRouteTab = function(t) { const r = o.apply(this, arguments); if (window.KISMET_SET_METHOD) window.KISMET_SET_METHOD(t, true); return r; }; }
+    if (typeof window.updateNavigationUI === 'function') { const o = window.updateNavigationUI; window.updateNavigationUI = function() { const r = o.apply(this, arguments); if (window.KISMET_AFTER_NAV) window.KISMET_AFTER_NAV(); bindItemCardsAndButtons(); return r; }; }
+    if (typeof window.switchKgRouteTab === 'function') { const o = window.switchKgRouteTab; window.switchKgRouteTab = function(t) { const r = o.apply(this, arguments); if (window.KISMET_SET_METHOD) window.KISMET_SET_METHOD(t, true); if (window.KISMET_ANIMATE_DONUT) setTimeout(() => window.KISMET_ANIMATE_DONUT(), 30); return r; }; }
     if (typeof window.setShippingMethod === 'function') { const o = window.setShippingMethod; window.setShippingMethod = function(id, m) { const r = o.apply(this, arguments); if (window.KISMET_SET_METHOD) window.KISMET_SET_METHOD(m, true); return r; }; }
-    if (typeof window.renderPage4KgCalculator === 'function') { const o = window.renderPage4KgCalculator; window.renderPage4KgCalculator = function() { const r = o.apply(this, arguments); if (window.KISMET_ANIMATE_DONUT) window.KISMET_ANIMATE_DONUT(); return r; }; }
-    if (typeof window.renderAll === 'function') { const o = window.renderAll; window.renderAll = function() { const r = o.apply(this, arguments); if (window.KISMET_SYNC_PANEL) window.KISMET_SYNC_PANEL(false); bindAllTrackButtons(); return r; }; }
+    if (typeof window.renderPage4KgCalculator === 'function') { const o = window.renderPage4KgCalculator; window.renderPage4KgCalculator = function() { const r = o.apply(this, arguments); if (window.KISMET_ANIMATE_DONUT) setTimeout(() => window.KISMET_ANIMATE_DONUT(), 20); return r; }; }
+    if (typeof window.renderAll === 'function') { const o = window.renderAll; window.renderAll = function() { const r = o.apply(this, arguments); if (window.KISMET_SYNC_PANEL) window.KISMET_SYNC_PANEL(false); bindItemCardsAndButtons(); return r; }; }
     if (typeof window.triggerNotificationAlert === 'function') {
         const o = window.triggerNotificationAlert;
         window.triggerNotificationAlert = function(sender, msg) {
@@ -157,8 +214,7 @@
         };
     }
 
-    setInterval(bindAllTrackButtons, 800);
-    setTimeout(() => { bindAllTrackButtons(); initNoti(); }, 250);
+    setTimeout(() => { bindItemCardsAndButtons(); initNoti(); }, 200);
+    setInterval(bindItemCardsAndButtons, 1200);
 })();
-                                                                                                                                                       </script>
-                                                                                                                                                       
+                                      </script>
