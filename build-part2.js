@@ -8,7 +8,7 @@ fs.mkdirSync("www/vendor", { recursive: true });
 
 const mainHtml = fs.existsSync("KISMET_gate_v8.html")
     ? "KISMET_gate_v8.html"
-    : (fs.existsSync("index.html") ? "index.html" : allFiles.find(f => f.endsWith(".html") && f.indexOf("kismet-addon") !== 0));
+    : (fs.existsSync("index.html") ? "index.html" : allFiles.find(f => f.endsWith(".html") && !f.startsWith("kismet-addon")));
 if (!mainHtml) throw new Error("Main HTML not found!");
 fs.copyFileSync(mainHtml, "www/index.html");
 
@@ -23,6 +23,9 @@ fs.cpSync("node_modules/@fortawesome/fontawesome-free/css", "www/fa/css", { recu
 fs.cpSync("node_modules/@fortawesome/fontawesome-free/webfonts", "www/fa/webfonts", { recursive: true });
 fs.copyFileSync("node_modules/html2canvas/dist/html2canvas.min.js", "www/vendor/html2canvas.min.js");
 
+const fence = String.fromCharCode(96, 96, 96);
+const cleanAddon = (t) => t.split(/\r?\n/).filter(l => !l.trim().startsWith(fence)).join("\n");
+
 let html = fs.readFileSync("www/index.html", "utf8");
 html = html.replace(/https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/6\.4\.0\/css\/all\.min\.css/g, "./fa/css/all.min.css");
 html = html.replace(/https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/html2canvas\/1\.4\.1\/html2canvas\.min\.js/g, "./vendor/html2canvas.min.js");
@@ -34,14 +37,15 @@ if (!fs.existsSync("1000533185.png")) {
     );
 }
 
-["kismet-addon-1.html", "kismet-addon-2.html", "kismet-addon-2b.html", "kismet-addons.html"].forEach(f => {
+["kismet-addon-1.html", "kismet-addon-2.html", "kismet-addon-2b.html"].forEach(f => {
     if (fs.existsSync(f)) {
-        const raw = fs.readFileSync(f, "utf8").replace(/<script>[\s\S]*?<\/script>/i, "").replace(/<\/html>/i, "");
-        html = html.replace(/<\/body>/i, "\n" + raw + "\n</body>");
+        const content = cleanAddon(fs.readFileSync(f, "utf8"));
+        console.log("Injecting:", f, content.length, "bytes");
+        html = html.replace(/<\/body>/i, () => "\n" + content + "\n</body>");
     }
 });
-fs.writeFileSync("www/index.html", html, "utf8");
 
+fs.writeFileSync("www/index.html", html, "utf8");
 run('npx cap init "KISMET" "com.kismet.app" --web-dir www');
 run("npx cap add android");
 run("npx cap sync android");
