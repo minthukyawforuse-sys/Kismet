@@ -4753,5 +4753,381 @@
         const origNav = window.updateNavigationUI;
         window.updateNavigationUI = function() {
             const res = origNav.apply(this, argument
-</body>
+<!-- ==================== MAP TRACKING MODAL & NATIVE ANDROID NOTI + VIBRATION ==================== -->
+<style>
+    /* Pinduoduo-Inspired Dark Map Tracking Modal (KISMET Theme Compatible) */
+    #kismetTrackModal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(8px);
+        z-index: 65;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 10px;
+    }
+    #kismetTrackModal.hidden { display: none; }
+    .ktm-sheet {
+        width: 100%;
+        max-width: 28rem;
+        max-height: 92vh;
+        overflow-y: auto;
+        background: #141416;
+        border: 1px solid #2a2a2e;
+        border-radius: 1.75rem;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+        animation: ktmSheetUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes ktmSheetUp {
+        0%   { opacity: 0; transform: translateY(28px) scale(0.96); filter: blur(8px); }
+        100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+    }
+    .ktm-map-box {
+        position: relative;
+        height: 215px;
+        background: radial-gradient(circle at 75% 20%, #1d2633 0%, #11151c 58%, #0a0c10 100%);
+        overflow: hidden;
+        border-bottom: 1px solid #26262a;
+    }
+    .ktm-progress-track {
+        position: relative;
+        height: 7px;
+        background: #26262a;
+        border-radius: 999px;
+        overflow: visible;
+    }
+    .ktm-progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #16a34a 0%, #22c55e 65%, #4ade80 100%);
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.55);
+        transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .ktm-progress-truck {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        transition: left 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+        z-index: 3;
+    }
+    .ktm-map-active-path {
+        transition: stroke-dashoffset 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+</style>
+
+<div id="kismetTrackModal" class="hidden" onclick="if(event.target===this) closeKismetTrackModal()">
+    <div class="ktm-sheet no-scrollbar text-white">
+        <!-- Dark Stylized Map Header (CN -> Lashio -> Yangon) -->
+        <div class="ktm-map-box">
+            <svg id="ktmMapSvg" viewBox="0 0 400 215" class="w-full h-full block">
+                <defs>
+                    <pattern id="ktmGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+                        <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(255,255,255,0.035)" stroke-width="1"/>
+                    </pattern>
+                    <filter id="ktmGlow" x="-30%" y="-30%" width="160%" height="160%">
+                        <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                </defs>
+                <rect width="400" height="215" fill="url(#ktmGrid)"/>
+
+                <!-- Stylized Border / Region Lines -->
+                <path d="M 0 88 Q 95 70 175 110 T 340 85 L 400 72" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+                <path d="M 110 0 Q 145 75 125 140 T 155 215" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>
+                <path d="M 255 0 Q 280 85 245 150 T 290 215" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>
+
+                <!-- Region Background Watermarks -->
+                <text x="310" y="34" fill="rgba(255,255,255,0.16)" font-size="11" font-weight="700">中国 / 云南</text>
+                <text x="195" y="90" fill="rgba(255,255,255,0.14)" font-size="10" font-weight="700">SHAN STATE</text>
+                <text x="48"  y="188" fill="rgba(255,255,255,0.15)" font-size="10" font-weight="700">YANGON</text>
+
+                <!-- Base Full Route (China -> Lashio -> Yangon) -->
+                <path id="ktmBasePath" d="M 342 46 C 300 78, 252 86, 206 114 C 156 144, 118 148, 66 172"
+                    fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 5"/>
+
+                <!-- Active Completed Glowing Route -->
+                <path id="ktmActivePath" class="ktm-map-active-path"
+                    d="M 342 46 C 300 78, 252 86, 206 114 C 156 144, 118 148, 66 172"
+                    fill="none" stroke="#22c55e" stroke-width="4.5" stroke-linecap="round" filter="url(#ktmGlow)"/>
+
+                <!-- Origin Dot: China -->
+                <circle cx="342" cy="46" r="6" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+                <text x="342" y="65" text-anchor="middle" fill="#e5e7eb" font-size="10" font-weight="800">တရုတ်</text>
+
+                <!-- Mid Hub Dot: Lashio -->
+                <circle cx="206" cy="114" r="5.5" fill="#f26419" stroke="#ffffff" stroke-width="2"/>
+                <text x="206" y="133" text-anchor="middle" fill="#fdba74" font-size="10" font-weight="800">လားရှိုး</text>
+
+                <!-- Destination Dot: Yangon -->
+                <circle cx="66" cy="172" r="7" fill="#22c55e" fill-opacity="0.35"/>
+                <circle cx="66" cy="172" r="4.5" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+                <text x="66" y="191" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800">ရန်ကုန်</text>
+
+                <!-- Moving Vehicle Marker on Map -->
+                <g id="ktmMapVehicle" transform="translate(342, 46)">
+                    <circle r="13" fill="#16a34a" fill-opacity="0.28"/>
+                    <circle r="10" fill="#18181b" stroke="#22c55e" stroke-width="2"/>
+                    <text id="ktmMapVehicleEmoji" x="0" y="4" text-anchor="middle" font-size="11">🚚</text>
+                </g>
+            </svg>
+
+            <!-- Top Floating Status Banner (like screenshot) -->
+            <div class="absolute top-3 left-3 right-12 flex items-start gap-2 pointer-events-none">
+                <div class="bg-[#16a34a]/95 text-white px-3 py-1.5 rounded-xl shadow-lg border border-white/20 max-w-[82%]">
+                    <div id="ktmHeroTitle" class="text-xs font-extrabold leading-tight">ပို့ဆောင်နေဆဲ</div>
+                    <div id="ktmHeroSub" class="text-[10px] text-white/90 font-semibold mt-0.5 truncate">တရုတ် ➔ လားရှိုး ➔ ရန်ကုန်</div>
+                </div>
+            </div>
+
+            <!-- Close Button -->
+            <button type="button" onclick="closeKismetTrackModal()"
+                class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/65 border border-white/15 text-white flex items-center justify-center text-xs btn-bounce">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Destination Callout Badge -->
+            <div class="absolute bottom-3 left-3 flex items-center rounded-lg overflow-hidden shadow-md border border-white/15 text-[10px] font-extrabold">
+                <span class="bg-[#16a34a] text-white px-2 py-0.5">ပို့</span>
+                <span id="ktmDestPill" class="bg-white text-black px-2 py-0.5">ရန်ကုန်</span>
+            </div>
+        </div>
+
+        <!-- Progress Bar Strip (Origin ==== Truck ==== Destination) -->
+        <div class="px-4 py-3 bg-[#101012] border-b border-neutral-800 space-y-2">
+            <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-0.5 rounded-full border border-emerald-500/60 bg-emerald-950/50 text-emerald-400 text-[10px] font-extrabold shrink-0">တရုတ်</span>
+                <div class="flex-1 ktm-progress-track">
+                    <div id="ktmBarFill" class="ktm-progress-fill" style="width: 25%"></div>
+                    <div id="ktmBarTruck" class="ktm-progress-truck" style="left: 25%">
+                        <span id="ktmBarIcon" class="w-6 h-6 rounded-full bg-neutral-900 border-2 border-emerald-400 flex items-center justify-center text-[11px] shadow-md">🚚</span>
+                    </div>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full border border-emerald-500/60 bg-emerald-950/50 text-emerald-400 text-[10px] font-extrabold shrink-0">ရန်ကုန်</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+                <span class="text-neutral-400">ခရီးစဉ် <strong id="ktmPctLabel" class="text-emerald-400 font-extrabold">25%</strong></span>
+                <span id="ktmStageSummary" class="text-neutral-200 font-bold truncate ml-2">လားရှိုးသို့ ပို့ဆောင်နေဆဲ</span>
+            </div>
+        </div>
+
+        <!-- Details Body -->
+        <div class="p-4 space-y-3">
+            <!-- Courier & Tracking ID Row with Copy -->
+            <div class="bg-[#0a0a0c] border border-neutral-800 rounded-2xl p-3 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <span id="ktmCourierName" class="text-xs font-extrabold text-emerald-400">Courier Tracking</span>
+                        <div id="ktmTrackIdDisplay" class="text-sm font-extrabold text-white font-mono truncate mt-0.5">-</div>
+                    </div>
+                    <button type="button" onclick="copyActiveTrackId()"
+                        class="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white text-xs font-bold shrink-0 btn-bounce">
+                        Copy
+                    </button>
+                </div>
+                <!-- Inline Tracking ID Input / Edit -->
+                <div class="flex items-center gap-1.5 pt-1 border-t border-neutral-800/80">
+                    <input type="text" id="ktmTrackInput" placeholder="Tracking ID ထည့်/ပြင်ရန် (ဥပမာ JT5550...)"
+                        class="flex-1 px-2.5 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white font-mono outline-none focus:ring-2 focus:ring-orange-500">
+                    <button type="button" onclick="saveActiveTrackId()"
+                        class="px-3 py-1.5 rounded-xl burnt-orange-btn text-white text-[11px] font-bold shrink-0 btn-bounce">
+                        သိမ်းမည်
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live External China Courier Check Buttons (Free, Unlimited) -->
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="openExternalTrack('17track')"
+                    class="py-2.5 rounded-xl burnt-orange-btn text-white text-xs font-extrabold flex items-center justify-center gap-1.5 btn-bounce shadow-sm">
+                    <i class="fa-solid fa-magnifying-glass-location"></i>
+                    <span>17TRACK Live စစ်မည်</span>
+                </button>
+                <button type="button" onclick="openExternalTrack('kuaidi')"
+                    class="py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-emerald-400 text-xs font-extrabold flex items-center justify-center gap-1.5 btn-bounce">
+                    <i class="fa-solid fa-globe"></i>
+                    <span>Kuaidi100 (တရုတ်)</span>
+                </button>
+            </div>
+
+            <!-- Item Info Row -->
+            <div class="bg-[#0a0a0c] border border-neutral-800 rounded-2xl p-3 text-xs space-y-1">
+                <div class="flex items-center justify-between gap-2">
+                    <span id="ktmItemName" class="font-extrabold text-white truncate">ပစ္စည်းအမည်</span>
+                    <span id="ktmItemMethodBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-orange-400 font-bold shrink-0">Air</span>
+                </div>
+                <div id="ktmItemMeta" class="text-[11px] text-neutral-400"></div>
+            </div>
+
+            <!-- Vertical Timeline (like screenshot bottom) -->
+            <div class="bg-[#0a0a0c] border border-neutral-800 rounded-2xl p-3.5">
+                <div class="text-[11px] font-extrabold text-neutral-300 mb-2.5">📍 လမ်းကြောင်း အဆင့်ဆင့် မှတ်တမ်း</div>
+                <div id="ktmTimelineList" class="space-y-3 pl-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function initMapTrackingAndNativeNoti() {
+    let activeTrackItemId = null;
+    let activeTrackGateId = null;
+    let currentExtractedTrackId = '';
+
+    // ==================== 1. COURIER DETECTION & TRACKING PARSER ====================
+    function extractTrackId(text) {
+        if (!text) return '';
+        const clean = String(text).trim();
+        const match = clean.match(/\b([A-Za-z]{2,4}\d{8,20}|\d{10,20})\b/);
+        return match ? match[1].toUpperCase() : '';
+    }
+
+    function detectCourierName(trackId) {
+        if (!trackId) return 'Tracking ID မထည့်ရသေးပါ';
+        const id = trackId.toUpperCase();
+        if (/^JT\d{10,}$/.test(id)) return 'J&T Express (极兔速递)';
+        if (/^SF\d{10,}$/.test(id)) return 'SF Express (顺丰速运)';
+        if (/^YT\d{10,}$/.test(id)) return 'YTO Express (圆通速递)';
+        if (/^(75|78|73|54)\d{10,12}$/.test(id)) return 'ZTO Express (中通快递)';
+        if (/^77\d{11,13}$/.test(id)) return 'STO Express (申通快递)';
+        if (/^(43|46|31)\d{11,13}$/.test(id)) return 'Yunda Express (韵达快递)';
+        if (/^(JD|JDV|JDX)[A-Z0-9]{9,}$/.test(id)) return 'JD Logistics (京东物流)';
+        if (/^(E[A-Z]\d{9}CN|98\d{11}|1\d{12})$/.test(id)) return 'China Post / EMS';
+        if (/^DPK\d{10,}$/.test(id)) return 'Deppon Express (德邦)';
+        return 'China Express / Courier';
+    }
+
+    function findItemAnywhere(itemId, gateId) {
+        if (gateId && typeof gateShipments !== 'undefined') {
+            const g = gateShipments.find(s => s.id === gateId);
+            if (g) {
+                const it = g.items.find(x => x.id === itemId);
+                if (it) return { item: it, gate: g };
+            }
+        }
+        const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined')
+            ? (allRouteRecords[ROUTE_KEY] || []) : [];
+        const direct = list.find(x => x && x.id === itemId);
+        if (direct) return { item: direct, gate: null };
+
+        if (typeof gateShipments !== 'undefined') {
+            for (const g of gateShipments) {
+                const it = (g.items || []).find(x => x && x.id === itemId);
+                if (it) return { item: it, gate: g };
+            }
+        }
+        return null;
+    }
+
+    function renderTrackModalContent() {
+        const found = findItemAnywhere(activeTrackItemId, activeTrackGateId);
+        if (!found) return;
+        const { item, gate } = found;
+        const method = item.method || 'Air';
+        const emoji = method === 'Air' ? '✈️' : (method === 'Post' ? '📮' : '🚚');
+
+        // Determine progress % and stage labels
+        let pct = 25;
+        let heroTitle = 'တရုတ်မှ ထွက်ခွာနေဆဲ';
+        let heroSub = 'တရုတ် ➔ လားရှိုး လမ်းပေါ်တွင် ရှိနေပါသည်';
+        let stageSummary = 'လားရှိုးသို့ ရောက်ရှိရန် စောင့်ဆိုင်းနေသည်';
+
+        if (gate && gate.checked) {
+            pct = 100;
+            heroTitle = 'ရန်ကုန် ရောက်ရှိ စစ်ဆေးပြီး ✅';
+            heroSub = `${gate.gate} မှတဆင့် ရန်ကုန်ရောက် စစ်ပြီးပါပြီ`;
+            stageSummary = `ပြီးစီးပြီ (${gate.checkedAt || gate.date})`;
+        } else if (gate) {
+            pct = 82;
+            heroTitle = 'ရန်ကုန်သို့ ပို့ဆောင်နေဆဲ';
+            heroSub = `${gate.gate} ကားဂိတ်သို့ တင်ပို့ပြီးပါပြီ`;
+            stageSummary = `ကားဂိတ်တင်ပြီး (${gate.date})`;
+        } else if (item.arrived) {
+            pct = 55;
+            heroTitle = 'လားရှိုးဂိတ် ရောက်ရှိပြီး ✅';
+            heroSub = `${method} လမ်းကြောင်းဖြင့် ရန်ကုန်ပို့ရန် အသင့်ရှိသည်`;
+            stageSummary = `လားရှိုးရောက်ပြီး • ${method} လမ်းကြောင်း`;
+        }
+
+        document.getElementById('ktmHeroTitle').innerText = heroTitle;
+        document.getElementById('ktmHeroSub').innerText = heroSub;
+        document.getElementById('ktmPctLabel').innerText = `${pct}%`;
+        document.getElementById('ktmStageSummary').innerText = stageSummary;
+        document.getElementById('ktmDestPill').innerText = gate ? gate.gate : 'ရန်ကုန်';
+        document.getElementById('ktmBarIcon').innerText = emoji;
+        document.getElementById('ktmMapVehicleEmoji').textContent = emoji;
+
+        // Animate progress bar & truck
+        const barFill = document.getElementById('ktmBarFill');
+        const barTruck = document.getElementById('ktmBarTruck');
+        barFill.style.width = '5%';
+        barTruck.style.left = '5%';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                barFill.style.width = `${pct}%`;
+                barTruck.style.left = `${pct}%`;
+            });
+        });
+
+        // Animate SVG Map Path & Vehicle Position along curve
+        const activePath = document.getElementById('ktmActivePath');
+        const vehicleG = document.getElementById('ktmMapVehicle');
+        if (activePath && vehicleG && typeof activePath.getTotalLength === 'function') {
+            const totalLen = activePath.getTotalLength();
+            const targetLen = totalLen * (pct / 100);
+            activePath.style.transition = 'none';
+            activePath.style.strokeDasharray = `${totalLen} ${totalLen}`;
+            activePath.style.strokeDashoffset = `${totalLen}`;
+            const pt = activePath.getPointAtLength(targetLen);
+            vehicleG.setAttribute('transform', `translate(${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`);
+            void activePath.getBoundingClientRect();
+            requestAnimationFrame(() => {
+                activePath.style.transition = '';
+                activePath.style.strokeDashoffset = `${Math.max(0, totalLen - targetLen)}`;
+            });
+        }
+
+        // Courier & Tracking ID
+        const extracted = extractTrackId(item.note);
+        currentExtractedTrackId = extracted || (item.note ? item.note.trim() : '');
+        document.getElementById('ktmCourierName').innerText = detectCourierName(extracted);
+        document.getElementById('ktmTrackIdDisplay').innerText = currentExtractedTrackId || 'Tracking ID မရှိသေးပါ';
+        document.getElementById('ktmTrackInput').value = item.note || '';
+
+        // Item Metadata
+        document.getElementById('ktmItemName').innerText = `${item.name} (Qty: ${item.qty})`;
+        document.getElementById('ktmItemMethodBadge').innerText = `${emoji} ${method}`;
+        const metaParts = [];
+        if (item.source) metaParts.push(`🛍️ ${item.source}`);
+        if (item.buyer) metaParts.push(`👤 ${item.buyer}`);
+        if (item.kg) metaParts.push(`⚖️ ${item.kg} Kg`);
+        if (item.fee) metaParts.push(`💰 ${Math.round(item.fee).toLocaleString()} Ks`);
+        document.getElementById('ktmItemMeta').innerText = metaParts.join(' • ') || 'အသေးစိတ် မှတ်ချက်မရှိပါ';
+
+        // Vertical Timeline Steps
+        const steps = [
+            {
+                done: Boolean(gate && gate.checked),
+                active: Boolean(gate && !gate.checked),
+                title: gate && gate.checked ? 'ရန်ကုန် ရောက်ရှိ စစ်ဆေးပြီး' : 'ရန်ကုန် ပို့ဆောင်ရေး (ကားဂိတ်)',
+                desc: gate ? `🚏 ${gate.gate} (${gate.date})${gate.note ? ' • ' + gate.note : ''}` : 'ကားဂိတ် မတင်ရသေးပါ'
+            },
+            {
+                done: Boolean(item.arrived || gate),
+                active: Boolean(item.arrived && !gate),
+                title: 'လားရှိုးဂိတ် ရောက်ရှိမှု',
+                desc: (item.arrived || gate)
+                    ? `လားရှိုးရောက်ရှိပြီး • ${method} လမ်းကြောင်းဖြင့် သတ်မှတ်ထားသည်`
+                    : 'တရုတ်မှ လားရှိုးသို့ လမ်းကြောင်းပေါ်တွင် ရှိနေဆဲ'
+            },
+            {
+                done: true,
+                active: !item.arrived && !gate,
+                title: 'တရုတ် မှာယူစာရင်းသွင်းပြီး',
+                desc: `${item.source ? item.source + ' မှ ' : ''}မှာယူပြီး (${item.qty} ခု)${currentExtractedTrackId ? ' • ID: ' + currentExtractedTrackId : ''}`
+            }
+        ];
+
+        const tl = docu
+ </body>
 </html>
