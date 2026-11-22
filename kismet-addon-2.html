@@ -1,223 +1,173 @@
-<!-- ==================== KISMET ADDON PART 2B: REMAINING LOGIC ==================== -->
+<!-- ==================== KISMET ADDON 2A: SAVER, ANIMATIONS & ROUTE PANEL ==================== -->
 <script>
-(function finishKismetAddon2B() {
-    if (window.__kismetAddon2BLoaded) return;
-    window.__kismetAddon2BLoaded = true;
+(function initKismetAddonPartA() {
+    if (window.__kismetAddon2ALoaded) return;
+    window.__kismetAddon2ALoaded = true;
+    const getCap = (n) => (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins[n] : null;
 
-    function getCapPlugin(name) {
-        return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins[name] : null;
-    }
-
-    function extractTrackId(text) {
-        if (!text) return '';
-        const m = String(text).trim().match(/\b([A-Za-z]{1,4}\d{8,20}|\d{10,20})\b/);
-        return m ? m[1].toUpperCase() : '';
-    }
-
-    function detectCourierName(trackId) {
-        if (!trackId) return 'Tracking ID မထည့်ရသေးပါ';
-        const id = trackId.toUpperCase();
-        if (/^JT\d{10,}$/.test(id)) return 'J&T Express (极兔速递)';
-        if (/^SF\d{10,}$/.test(id)) return 'SF Express (顺丰速运)';
-        if (/^YT\d{10,}$/.test(id)) return 'YTO Express (圆通速递)';
-        if (/^(75|78|73|54)\d{10,12}$/.test(id)) return 'ZTO Express (中通快递)';
-        if (/^77\d{11,13}$/.test(id)) return 'STO Express (申通快递)';
-        if (/^(43|46|31)\d{11,13}$/.test(id)) return 'Yunda Express (韵达快递)';
-        if (/^(JD|JDV|JDX)[A-Z0-9]{9,}$/.test(id)) return 'JD Logistics (京东物流)';
-        if (/^(E[A-Z]\d{9}CN|98\d{11}|1\d{12})$/.test(id)) return 'China Post / EMS';
-        if (/^DPK\d{10,}$/.test(id)) return 'Deppon Express (德邦)';
-        return 'China Express / Courier';
-    }
-
-    function findItemAnywhere(itemId, gateId) {
-        if (gateId && typeof gateShipments !== 'undefined') {
-            const g = gateShipments.find(s => s.id === gateId);
-            if (g) { const it = (g.items || []).find(x => x.id === itemId); if (it) return { item: it, gate: g }; }
-        }
-        const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined') ? (allRouteRecords[ROUTE_KEY] || []) : [];
-        const direct = list.find(x => x && x.id === itemId);
-        if (direct) return { item: direct, gate: null };
-        if (typeof gateShipments !== 'undefined') {
-            for (const g of gateShipments) { const it = (g.items || []).find(x => x && x.id === itemId); if (it) return { item: it, gate: g }; }
-        }
-        return null;
-    }
-
-    let activeTrackItemId = null, activeTrackGateId = null, currentExtractedTrackId = '';
-
-    window.renderTrackModalContent = function() {
-        const found = findItemAnywhere(activeTrackItemId, activeTrackGateId);
-        if (!found) return;
-        const { item, gate } = found, method = item.method || 'Air';
-        const emoji = method === 'Air' ? '✈️' : (method === 'Post' ? '📮' : '🚚');
-        let pct = 25, heroTitle = 'တရုတ်မှ ထွက်ခွာနေဆဲ', heroSub = 'တရုတ် ➔ လားရှိုး လမ်းပေါ်တွင် ရှိနေပါသည်', stageSummary = 'လားရှိုးသို့ ရောက်ရှိရန် စောင့်ဆိုင်းနေသည်';
-        if (gate && gate.checked) { pct = 100; heroTitle = 'ရန်ကုန် ရောက်ရှိ စစ်ဆေးပြီး ✅'; heroSub = `${gate.gate} မှတဆင့် ရန်ကုန်ရောက် စစ်ပြီးပါပြီ`; stageSummary = `ပြီးစီးပြီ (${gate.checkedAt || gate.date})`; }
-        else if (gate) { pct = 82; heroTitle = 'ရန်ကုန်သို့ ပို့ဆောင်နေဆဲ'; heroSub = `${gate.gate} ကားဂိတ်သို့ တင်ပို့ပြီးပါပြီ`; stageSummary = `ကားဂိတ်တင်ပြီး (${gate.date})`; }
-        else if (item.arrived) { pct = 55; heroTitle = 'လားရှိုးဂိတ် ရောက်ရှိပြီး ✅'; heroSub = `${method} လမ်းကြောင်းဖြင့် ရန်ကုန်ပို့ရန် အသင့်ရှိသည်`; stageSummary = `လားရှိုးရောက်ပြီး • ${method} လမ်းကြောင်း`; }
-
-        document.getElementById('ktmHeroTitle').innerText = heroTitle;
-        document.getElementById('ktmHeroSub').innerText = heroSub;
-        document.getElementById('ktmPctLabel').innerText = `${pct}%`;
-        document.getElementById('ktmStageSummary').innerText = stageSummary;
-        document.getElementById('ktmDestPill').innerText = gate ? gate.gate : 'ရန်ကုန်';
-        document.getElementById('ktmBarIcon').innerText = emoji;
-        document.getElementById('ktmMapVehicleEmoji').textContent = emoji;
-
-        const bf = document.getElementById('ktmBarFill'), bt = document.getElementById('ktmBarTruck');
-        bf.style.width = '5%'; bt.style.left = '5%';
-        requestAnimationFrame(() => requestAnimationFrame(() => { bf.style.width = `${pct}%`; bt.style.left = `${pct}%`; }));
-
-        const ap = document.getElementById('ktmActivePath'), vg = document.getElementById('ktmMapVehicle');
-        if (ap && vg && typeof ap.getTotalLength === 'function') {
-            const totalLen = ap.getTotalLength(), targetLen = totalLen * (pct / 100);
-            ap.style.transition = 'none'; ap.style.strokeDasharray = `${totalLen} ${totalLen}`; ap.style.strokeDashoffset = `${totalLen}`;
-            const pt = ap.getPointAtLength(targetLen);
-            vg.setAttribute('transform', `translate(${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`);
-            void ap.getBoundingClientRect();
-            requestAnimationFrame(() => { ap.style.transition = ''; ap.style.strokeDashoffset = `${Math.max(0, totalLen - targetLen)}`; });
-        }
-
-        const extracted = extractTrackId(item.note);
-        currentExtractedTrackId = extracted || (item.note ? item.note.trim() : '');
-        document.getElementById('ktmCourierName').innerText = detectCourierName(extracted);
-        document.getElementById('ktmTrackIdDisplay').innerText = currentExtractedTrackId || 'Tracking ID မရှိသေးပါ';
-        document.getElementById('ktmTrackInput').value = item.note || '';
-        document.getElementById('ktmItemName').innerText = `${item.name} (Qty: ${item.qty})`;
-        document.getElementById('ktmItemMethodBadge').innerText = `${emoji} ${method}`;
-        const meta = [item.source && `🛍️ ${item.source}`, item.buyer && `👤 ${item.buyer}`, item.kg && `⚖️ ${item.kg} Kg`, item.fee && `💰 ${Math.round(item.fee).toLocaleString()} Ks`].filter(Boolean);
-        document.getElementById('ktmItemMeta').innerText = meta.join(' • ') || 'အသေးစိတ် မှတ်ချက်မရှိပါ';
-
-        const steps = [
-            { done: Boolean(gate && gate.checked), active: Boolean(gate && !gate.checked), title: gate && gate.checked ? 'ရန်ကုန် ရောက်ရှိ စစ်ဆေးပြီး' : 'ရန်ကုန် ပို့ဆောင်ရေး (ကားဂိတ်)', desc: gate ? `🚏 ${gate.gate} (${gate.date})${gate.note ? ' • ' + gate.note : ''}` : 'ကားဂိတ် မတင်ရသေးပါ' },
-            { done: Boolean(item.arrived || gate), active: Boolean(item.arrived && !gate), title: 'လားရှိုးဂိတ် ရောက်ရှိမှု', desc: (item.arrived || gate) ? `လားရှိုးရောက်ရှိပြီး • ${method} လမ်းကြောင်းဖြင့် သတ်မှတ်ထားသည်` : 'တရုတ်မှ လားရှိုးသို့ လမ်းကြောင်းပေါ်တွင် ရှိနေဆဲ' },
-            { done: true, active: !item.arrived && !gate, title: 'တရုတ် မှာယူစာရင်းသွင်းပြီး', desc: `${item.source ? item.source + ' မှ ' : ''}မှာယူပြီး (${item.qty} ခု)${currentExtractedTrackId ? ' • ID: ' + currentExtractedTrackId : ''}` }
-        ];
-        const esc = typeof escapeHTML === 'function' ? escapeHTML : (s => String(s || ''));
-        document.getElementById('ktmTimelineList').innerHTML = steps.map((st, i) => `
-            <div class="relative pl-5 ${i < steps.length - 1 ? 'pb-3 border-l border-neutral-800' : ''}">
-                <span class="absolute -left-[6px] top-0.5 w-3 h-3 rounded-full ${st.done ? 'bg-emerald-500 ring-4 ring-emerald-500/20' : st.active ? 'bg-orange-500 ring-4 ring-orange-500/20 animate-pulse' : 'bg-neutral-700'}"></span>
-                <div class="text-xs font-extrabold ${st.done ? 'text-emerald-400' : st.active ? 'text-orange-400' : 'text-neutral-400'}">${esc(st.title)}</div>
-                <div class="text-[11px] text-neutral-300 mt-0.5 leading-snug">${esc(st.desc)}</div>
-            </div>`).join('');
-    };
-
-    window.openKismetTrackModal = function(itemId, gateId) {
-        activeTrackItemId = itemId; activeTrackGateId = gateId || null;
-        window.renderTrackModalContent();
-        document.getElementById('kismetTrackModal').classList.remove('hidden');
-        fireNativeHapticLight();
-    };
-    window.closeKismetTrackModal = function() {
-        document.getElementById('kismetTrackModal').classList.add('hidden');
-        activeTrackItemId = null; activeTrackGateId = null;
-    };
-    window.copyActiveTrackId = function() {
-        if (!currentExtractedTrackId) { if (typeof showToast === 'function') showToast('Copy ကူးရန် Tracking ID မရှိသေးပါ'); return; }
-        if (typeof copyTextToClipboard === 'function') copyTextToClipboard(currentExtractedTrackId);
-        fireNativeHapticLight();
-    };
-    window.saveActiveTrackId = function() {
-        if (typeof checkPermission === 'function' && !checkPermission('route')) return;
-        const found = findItemAnywhere(activeTrackItemId, activeTrackGateId); if (!found) return;
-        found.item.note = document.getElementById('ktmTrackInput').value.trim();
-        if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-        if (typeof renderAll === 'function') renderAll();
-        if (found.gate && typeof renderGateDetail === 'function') renderGateDetail();
-        window.renderTrackModalContent();
-        if (typeof showToast === 'function') showToast('Tracking ID သိမ်းဆည်းပြီးပါပြီ');
-        fireNativeHapticLight();
-    };
-    window.openExternalTrack = function(provider) {
-        const id = extractTrackId(document.getElementById('ktmTrackInput').value) || currentExtractedTrackId;
-        if (!id) { if (typeof showToast === 'function') showToast('အရင်ဆုံး Tracking ID ရိုက်ထည့်ပြီး သိမ်းပါ'); return; }
-        window.open(provider === 'kuaidi' ? `https://m.kuaidi100.com/result.jsp?nu=${encodeURIComponent(id)}` : `https://t.17track.net/en#nums=${encodeURIComponent(id)}`, '_blank', 'noopener');
-    };
-
-    function injectTrackButtons() {
-        document.querySelectorAll('#orderListContainer button[onclick^="transferToShop("]').forEach(btn => {
-            const p = btn.parentElement; if (!p || p.querySelector('.ktm-inject-btn')) return;
-            const m = (btn.getAttribute('onclick') || '').match(/transferToShop\('([^']+)'\)/); if (!m) return;
-            p.classList.add('gap-1.5', 'flex-wrap');
-            const b = document.createElement('button'); b.type = 'button';
-            b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/35 text-[10px] font-bold btn-bounce flex items-center gap-1 transition';
-            b.innerHTML = '<i class="fa-solid fa-map-location-dot"></i> Track မြေပုံ';
-            b.onclick = () => window.openKismetTrackModal(m[1]); p.appendChild(b);
-        });
-        document.querySelectorAll('#lashioCheckList button[onclick^="setShippingMethod("]').forEach(btn => {
-            const m = (btn.getAttribute('onclick') || '').match(/setShippingMethod\('([^']+)',\s*'Air'\)/); if (!m) return;
-            const row = btn.parentElement && btn.parentElement.parentElement; if (!row || row.querySelector('.ktm-inject-btn')) return;
-            const b = document.createElement('button'); b.type = 'button';
-            b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/70 text-emerald-400 border border-emerald-600/40 text-[11px] font-bold btn-bounce shrink-0 flex items-center gap-1';
-            b.innerHTML = '<i class="fa-solid fa-map-location-dot"></i> Track';
-            b.onclick = () => window.openKismetTrackModal(m[1]); row.appendChild(b);
-        });
-    }
-
-    function injectGateTrackButtons() {
-        document.querySelectorAll('#gateDetailBody input[onchange^="editGateItemKg("]').forEach(inp => {
-            const card = inp.parentElement && inp.parentElement.parentElement && inp.parentElement.parentElement.parentElement;
-            if (!card || card.querySelector('.ktm-inject-btn')) return;
-            const m = (inp.getAttribute('onchange') || '').match(/editGateItemKg\('([^']+)'/); if (!m) return;
-            const w = document.createElement('div'); w.className = 'pt-1 flex justify-end';
-            const b = document.createElement('button'); b.type = 'button';
-            b.className = 'ktm-inject-btn px-2.5 py-1 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/35 text-[10px] font-bold btn-bounce flex items-center gap-1';
-            b.innerHTML = '<i class="fa-solid fa-map-location-dot"></i> Track မြေပုံ';
-            b.onclick = () => window.openKismetTrackModal(m[1], typeof activeGateId !== 'undefined' ? activeGateId : null);
-            w.appendChild(b); card.appendChild(w);
-        });
-    }
-
-    let nativeNotiReady = false;
-    async function initNativeNotifications() {
-        const LN = getCapPlugin('LocalNotifications');
-        if (!LN || nativeNotiReady) return;
-        try {
-            const perm = await LN.checkPermissions();
-            if (perm.display !== 'granted') await LN.requestPermissions();
-            if (typeof LN.createChannel === 'function') {
-                await LN.createChannel({ id: 'kismet_live_alerts', name: 'KISMET Live Alerts', description: 'KISMET Live Alerts', importance: 4, visibility: 1, vibration: true });
+    const origClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function() {
+        const saver = getCap('KismetSaver'), dl = this.download || this.getAttribute('download'), href = this.href || this.getAttribute('href') || '';
+        if (saver && dl && href) {
+            const runPerm = (fn) => (typeof saver.requestMediaPermission === 'function' ? saver.requestMediaPermission() : Promise.resolve()).then(fn);
+            if (href.startsWith('data:image/')) {
+                runPerm(() => saver.saveImage({ base64: href, filename: dl }))
+                    .then(() => { if (typeof showToast === 'function') showToast('✅ Gallery (KISMET) ထဲ သိမ်းပြီးပါပြီ'); fireHapticLight(); })
+                    .catch(e => { if (typeof showToast === 'function') showToast('⚠️ ' + (e && e.message ? e.message : 'Save failed')); });
+                return;
             }
-            nativeNotiReady = true;
-        } catch (e) {}
-    }
-    function fireNativeHapticLight() {
-        try { const H = getCapPlugin('Haptics'); if (H && H.impact) H.impact({ style: 'LIGHT' }); else if (navigator.vibrate) navigator.vibrate(25); } catch (e) {}
-    }
-    function fireNativeStrongVibration() {
-        try { const H = getCapPlugin('Haptics'); if (H && H.vibrate) { H.vibrate({ duration: 420 }); setTimeout(() => { try { H.vibrate({ duration: 480 }); } catch (e) {} }, 540); } } catch (e) {}
-        try { if (navigator.vibrate) navigator.vibrate([400, 120, 480]); } catch (e) {}
-    }
-    async function fireNativeSystemNotification(senderName, messageText) {
-        const LN = getCapPlugin('LocalNotifications'); if (!LN) return;
-        try {
-            if (!nativeNotiReady) await initNativeNotifications();
-            await LN.schedule({ notifications: [{ id: Math.floor((Date.now() % 2000000000) + Math.random() * 1000), title: `KISMET • ${senderName || 'အဖွဲ့ဝင်'}`, body: String(messageText || 'အသိပေးချက်အသစ် ဝင်လာပါသည်'), channelId: 'kismet_live_alerts', schedule: { at: new Date(Date.now() + 80) } }] });
-        } catch (e) {}
+            if (href.startsWith('blob:')) {
+                fetch(href).then(r => r.text()).then(t => runPerm(() => saver.saveFile({ text: t, filename: dl, mime: 'text/csv' })))
+                    .then(() => { if (typeof showToast === 'function') showToast('✅ Download/KISMET ထဲ သိမ်းပြီးပါပြီ'); fireHapticLight(); })
+                    .catch(e => { if (typeof showToast === 'function') showToast('⚠️ ' + (e && e.message ? e.message : 'Save failed')); });
+                return;
+            }
+        }
+        return origClick.apply(this, arguments);
+    };
+
+    const GROUPS = [
+        { s: '#mode-btn-dash', c: 'burnt-orange-btn' },
+        { s: '#nav-btn-0', c: 'burnt-orange-btn' },
+        { s: '#shop-nav-btn-0', c: 'burnt-orange-btn' },
+        { s: '#kg-tab-Air', c: 'bg-orange-600' },
+        { s: '#deli-src-shop', c: 'bg-orange-600' }
+    ];
+    function syncPills(instant) {
+        GROUPS.forEach(g => {
+            const b = document.querySelector(g.s); if (!b || !b.parentElement) return;
+            const box = b.parentElement; if (!box.offsetWidth || !box.offsetHeight) return;
+            const act = Array.from(box.children).find(el => el.tagName === 'BUTTON' && el.classList.contains(g.c));
+            if (!act) return;
+            let pill = box.querySelector(':scope > .liquid-pill');
+            if (!pill) {
+                if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+                pill = document.createElement('span'); pill.className = 'liquid-pill liquid-instant';
+                pill.innerHTML = '<span class="liquid-pill-inner"></span>'; box.insertBefore(pill, box.firstChild);
+            }
+            const x = act.offsetLeft, y = act.offsetTop, w = act.offsetWidth, h = act.offsetHeight, br = getComputedStyle(act).borderRadius;
+            const prev = parseFloat(pill.dataset.prevX), moved = !isNaN(prev) && Math.abs(x - prev) > 2;
+            pill.classList.toggle('liquid-instant', Boolean(instant || !box.classList.contains('liquid-nav-ready')));
+            pill.style.width = w + 'px'; pill.style.height = h + 'px'; pill.style.borderRadius = br;
+            pill.style.transform = `translate3d(${x}px, ${y}px, 0)`; pill.dataset.prevX = String(x);
+            box.classList.add('liquid-nav-ready');
+            if (moved && !instant) { pill.classList.remove('liquid-stretching'); void pill.offsetWidth; pill.classList.add('liquid-stretching'); }
+            if (instant) requestAnimationFrame(() => pill.classList.remove('liquid-instant'));
+        });
     }
 
-    if (typeof window.renderPage1OrderList === 'function') {
-        const o = window.renderPage1OrderList;
-        window.renderPage1OrderList = function() { const r = o.apply(this, arguments); injectTrackButtons(); return r; };
-    }
-    if (typeof window.renderPage2LashioCheck === 'function') {
-        const o = window.renderPage2LashioCheck;
-        window.renderPage2LashioCheck = function() { const r = o.apply(this, arguments); injectTrackButtons(); return r; };
-    }
-    if (typeof window.renderGateDetail === 'function') {
-        const o = window.renderGateDetail;
-        window.renderGateDetail = function() { const r = o.apply(this, arguments); injectGateTrackButtons(); return r; };
-    }
-    if (typeof window.renderAll === 'function') {
-        const o = window.renderAll;
-        window.renderAll = function() { const r = o.apply(this, arguments); injectTrackButtons(); return r; };
-    }
-    if (typeof window.triggerNotificationAlert === 'function') {
-        const o = window.triggerNotificationAlert;
-        window.triggerNotificationAlert = function(senderName, messageText) {
-            const r = o.apply(this, arguments); fireNativeStrongVibration(); fireNativeSystemNotification(senderName, messageText); return r;
-        };
+    let lastPage = null, panelMethod = 'Air', lastPct = -1;
+    const SVGS = {
+        Air: `<svg viewBox="0 0 24 24" fill="white"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" transform="rotate(90 12 12)"/></svg>`,
+        Land: `<svg viewBox="0 0 24 24" fill="white"><path d="M18 18.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-12 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM20 8h-3V4H3a1 1 0 0 0-1 1v11h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-2-3zm-3 1.5h2.2l1.3 2H17v-2z"/></svg>`,
+        Post: `<svg viewBox="0 0 24 24" fill="white"><path d="M12 2C8.69 2 6 4.69 6 8v10h4v4h4v-4h4V8c0-3.31-2.69-6-6-6zm3 7H9V7h6v2zm-5 3h4v1.5h-4V12z"/></svg>`
+    };
+
+    function ensureRoutePanel() {
+        if (document.getElementById('kismetRouteAnimPanel')) return;
+        const p = document.createElement('div'); p.id = 'kismetRouteAnimPanel'; p.className = 'space-y-2';
+        p.innerHTML = `<div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-extrabold text-white truncate">တရုတ် - လားရှိုး - ရန်ကုန်</span>
+            <div class="flex items-center gap-1 shrink-0">
+                <button type="button" data-m="Air" class="kra-tab kra-active">Air</button>
+                <button type="button" data-m="Land" class="kra-tab">Land</button>
+                <button type="button" data-m="Post" class="kra-tab">Post</button>
+            </div></div>
+            <div class="flex items-center gap-3 bg-[#0a0a0c] border border-neutral-800 rounded-2xl px-3 py-2.5">
+                <div class="flex-1 min-w-0">
+                    <div class="kra-track-wrap"><div class="kra-rail"></div><div id="kraTrailEl" class="kra-trail"></div>
+                        <span class="kra-node kra-node-cn"></span><span class="kra-node kra-node-ls"></span><span class="kra-node kra-node-yg"></span>
+                        <div id="kraVehicleEl" class="kra-vehicle"><span id="kraVehicleInner">${SVGS.Air}</span></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-bold px-0.5 mt-0.5">
+                        <span class="text-neutral-300">တရုတ်</span><span class="text-orange-400">လားရှိုး</span><span class="text-white">ရန်ကုန်</span>
+                    </div>
+                    <div id="kraStatusText" class="text-[10px] text-neutral-400 mt-1 truncate"></div>
+                </div>
+                <button type="button" id="kraMiniKgBtn" class="shrink-0 flex flex-col items-center pl-2.5 border-l border-neutral-800 btn-bounce">
+                    <div class="relative w-14 h-14 flex items-center justify-center">
+                        <svg viewBox="0 0 42 42" class="w-full h-full -rotate-90">
+                            <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#262629" stroke-width="4.5"></circle>
+                            <circle id="kraMiniRingCircle" class="kra-ring-progress" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f26419" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="kraMiniPctText" class="text-[11px] font-extrabold text-white leading-none">0%</span>
+                            <span class="text-[8px] font-bold text-orange-400 mt-0.5">Kg %</span>
+                        </div>
+                    </div>
+                    <span id="kraMiniKgText" class="text-[9px] font-bold text-neutral-400 mt-0.5">0.0 Kg</span>
+                </button>
+            </div>`;
+        p.querySelectorAll('.kra-tab').forEach(b => b.addEventListener('click', () => window.KISMET_SET_METHOD(b.getAttribute('data-m'), true)));
+        p.querySelector('#kraMiniKgBtn').addEventListener('click', () => { if (typeof switchPage === 'function') switchPage(4); if (typeof switchKgRouteTab === 'function') switchKgRouteTab(panelMethod); });
+        mountPanel(); window.KISMET_SYNC_PANEL(true);
     }
 
-    setTimeout(() => { injectTrackButtons(); initNativeNotifications(); }, 120);
+    function mountPanel() {
+        const p = document.getElementById('kismetRouteAnimPanel'); if (!p) return;
+        const mode = (typeof currentMainMode !== 'undefined') ? currentMainMode : 'dashboard';
+        if (mode === 'shop') { p.classList.add('hidden'); return; }
+        p.classList.remove('hidden');
+        const target = mode === 'dashboard' ? document.getElementById('page-dashboard') : document.getElementById('section-route');
+        if (target && target.firstElementChild && p.parentElement !== target) target.insertBefore(p, target.firstElementChild.nextSibling);
+    }
+
+    window.KISMET_SET_METHOD = function(m, replay) {
+        if (!SVGS[m]) return; panelMethod = m;
+        const p = document.getElementById('kismetRouteAnimPanel');
+        if (p) {
+            p.querySelectorAll('.kra-tab').forEach(b => b.classList.toggle('kra-active', b.getAttribute('data-m') === m));
+            const inn = document.getElementById('kraVehicleInner'); if (inn) inn.innerHTML = SVGS[m];
+        }
+        if (replay) {
+            const v = document.getElementById('kraVehicleEl'), t = document.getElementById('kraTrailEl');
+            if (v && t) { v.style.animation = 'none'; t.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; t.style.animation = ''; }
+        }
+        window.KISMET_SYNC_PANEL(replay);
+    };
+
+    window.KISMET_SYNC_PANEL = function(replay) {
+        const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined' && Array.isArray(allRouteRecords[ROUTE_KEY])) ? allRouteRecords[ROUTE_KEY] : [];
+        const allKg = list.reduce((s, i) => s + (parseFloat(i.kg) || 0), 0);
+        const sub = list.filter(i => (i.method || 'Air') === panelMethod);
+        const subKg = sub.reduce((s, i) => s + (parseFloat(i.kg) || 0), 0);
+        const pct = allKg > 0 ? (subKg / allKg) * 100 : (list.length > 0 ? (sub.length / list.length) * 100 : 0);
+        const st = document.getElementById('kraStatusText'); if (st) st.innerText = `${panelMethod} • ${sub.length} မျိုး • ${subKg.toFixed(1)} Kg`;
+        const pe = document.getElementById('kraMiniPctText'), ke = document.getElementById('kraMiniKgText'), rg = document.getElementById('kraMiniRingCircle');
+        if (pe) pe.innerText = `${Math.round(pct)}%`; if (ke) ke.innerText = `${subKg.toFixed(1)} Kg`;
+        if (rg && (replay || Math.abs(pct - lastPct) > 0.2)) {
+            rg.style.transition = 'none'; rg.setAttribute('stroke-dashoffset', '100'); void rg.getBoundingClientRect();
+            requestAnimationFrame(() => { rg.style.transition = ''; rg.setAttribute('stroke-dashoffset', String(Math.max(0, 100 - Math.min(100, pct)))); });
+            lastPct = pct;
+        }
+    };
+
+    window.KISMET_ANIMATE_DONUT = function() {
+        const svg = document.getElementById('kgDonutSvg'); if (!svg || svg.querySelectorAll('circle').length <= 1) return;
+        const ns = 'http://www.w3.org/2000/svg';
+        svg.querySelectorAll('[data-kg-anim]').forEach(n => n.remove());
+        const mid = 'kgSweep_' + Date.now(), defs = document.createElementNS(ns, 'defs'); defs.setAttribute('data-kg-anim', '1');
+        const mask = document.createElementNS(ns, 'mask'); mask.setAttribute('id', mid);
+        const sw = document.createElementNS(ns, 'circle');
+        sw.setAttribute('cx', '21'); sw.setAttribute('cy', '21'); sw.setAttribute('r', '15.91549430918954');
+        sw.setAttribute('fill', 'none'); sw.setAttribute('stroke', '#fff'); sw.setAttribute('stroke-width', '8');
+        sw.setAttribute('stroke-dasharray', '100 100'); sw.setAttribute('stroke-dashoffset', '100'); sw.setAttribute('class', 'kg-donut-sweep-mask');
+        mask.appendChild(sw); defs.appendChild(mask);
+        const g = document.createElementNS(ns, 'g'); g.setAttribute('data-kg-anim', '1'); g.setAttribute('mask', `url(#${mid})`);
+        Array.from(svg.querySelectorAll('circle')).slice(1).forEach(c => g.appendChild(c));
+        svg.insertBefore(defs, svg.firstChild); svg.appendChild(g);
+        svg.classList.remove('kg-donut-popping'); void svg.getBoundingClientRect(); svg.classList.add('kg-donut-popping');
+    };
+
+    window.KISMET_AFTER_NAV = function() {
+        const el = (typeof currentMainMode === 'undefined') ? null : (currentMainMode === 'dashboard' ? document.getElementById('page-dashboard') : (currentMainMode === 'route' ? document.getElementById('page-' + currentPage) : document.getElementById('shop-page-' + currentShopPage)));
+        if (el && el.id !== lastPage) { if (lastPage !== null) { el.classList.remove('page-transition', 'apple-blur-transfer'); void el.offsetWidth; el.classList.add('apple-blur-transfer'); } lastPage = el.id; }
+        mountPanel(); window.KISMET_SYNC_PANEL(false); requestAnimationFrame(() => syncPills(false));
+        if (typeof currentMainMode !== 'undefined' && currentMainMode === 'route' && currentPage === 4) requestAnimationFrame(() => window.KISMET_ANIMATE_DONUT());
+    };
+
+    function fireHapticLight() { try { const H = getCap('Haptics'); if (H && H.impact) H.impact({ style: 'LIGHT' }); else if (navigator.vibrate) navigator.vibrate(25); } catch (e) {} }
+    setTimeout(() => { ensureRoutePanel(); syncPills(true); }, 100);
+    window.addEventListener('resize', () => syncPills(true));
 })();
-                                        </script>
+</script>
