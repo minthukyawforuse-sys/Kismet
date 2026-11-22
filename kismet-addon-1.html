@@ -1,161 +1,153 @@
-<!-- ==================== KISMET ADDON 1: ORANGE & BLACK TRACKING UI ==================== -->
+<!-- KISMET ADDON 1: ORANGE & BLACK LOCATION TRACKING UI & ANIMATION STYLES -->
 <style>
 @keyframes appleBlurTransfer { 0% { opacity: 0; filter: blur(14px); transform: translate3d(0, 14px, 0) scale(0.965); } 65% { opacity: 1; filter: blur(1.5px); } 100% { opacity: 1; filter: blur(0px); transform: translate3d(0, 0, 0) scale(1); } }
 .apple-blur-transfer { animation: appleBlurTransfer 0.44s cubic-bezier(0.22, 1, 0.36, 1) both !important; will-change: transform, opacity, filter; }
-@keyframes appleBlurSoft { 0% { opacity: 0.25; filter: blur(8px); transform: scale(0.98); } 100% { opacity: 1; filter: blur(0px); transform: scale(1); } }
-.apple-blur-soft { animation: appleBlurSoft 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
-
-.liquid-nav-ready > button { position: relative; z-index: 1; transition: color 0.28s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.liquid-nav-ready > button { position: relative; z-index: 1; transition: color 0.25s ease; }
 .liquid-nav-ready > button.burnt-orange-btn, .liquid-nav-ready > button.bg-orange-600 { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
-.liquid-pill { position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none; will-change: transform, width, height; transition: transform 0.48s cubic-bezier(0.32, 1.28, 0.38, 1), width 0.44s cubic-bezier(0.32, 1.28, 0.38, 1), height 0.44s cubic-bezier(0.32, 1.28, 0.38, 1), border-radius 0.35s ease; }
+.liquid-pill { position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none; transition: transform 0.46s cubic-bezier(0.32, 1.28, 0.38, 1), width 0.42s cubic-bezier(0.32, 1.28, 0.38, 1), height 0.42s cubic-bezier(0.32, 1.28, 0.38, 1); }
 .liquid-pill.liquid-instant { transition: none !important; }
-.liquid-pill-inner { display: block; width: 100%; height: 100%; border-radius: inherit; position: relative; overflow: hidden; background: linear-gradient(135deg, #f26419 0%, #c4420a 65%, #872904 100%); border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.38), 0 4px 14px rgba(232, 88, 18, 0.35); }
-@keyframes liquidDropletStretch { 0% { transform: scaleX(1) scaleY(1); } 35% { transform: scaleX(1.13) scaleY(0.86); } 70% { transform: scaleX(0.96) scaleY(1.04); } 100% { transform: scaleX(1) scaleY(1); } }
-.liquid-pill.liquid-stretching .liquid-pill-inner { animation: liquidDropletStretch 0.46s cubic-bezier(0.25, 1, 0.5, 1); }
+.liquid-pill-inner { display: block; width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(135deg, #f26419 0%, #c4420a 65%, #872904 100%); border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.38), 0 4px 14px rgba(232, 88, 18, 0.35); }
+@keyframes liquidStretch { 0%, 100% { transform: scaleX(1) scaleY(1); } 35% { transform: scaleX(1.13) scaleY(0.86); } 70% { transform: scaleX(0.96) scaleY(1.04); } }
+.liquid-pill.liquid-stretching .liquid-pill-inner { animation: liquidStretch 0.45s cubic-bezier(0.25, 1, 0.5, 1); }
 
-/* Orange & Black Route Panel (China - Lashio - Yangon) */
-#kismetRouteAnimPanel { background: #141416; border: 1px solid #2a2a2e; border-radius: 1.5rem; padding: 0.9rem; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
-.kra-tab { padding: 0.25rem 0.55rem; border-radius: 0.65rem; font-size: 10px; font-weight: 800; color: #a3a3a3; background: #0a0a0c; border: 1px solid #262629; transition: all 0.25s ease; }
-.kra-tab.kra-active { background: linear-gradient(135deg, #f26419 0%, #c4420a 100%); color: #ffffff; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 3px 10px rgba(232, 88, 18, 0.35); }
-.kra-track-wrap { position: relative; height: 42px; margin: 8px 14px 2px 14px; }
+/* Compact China - Lashio - Yangon Panel */
+#kismetRouteAnimPanel { background: #141416; border: 1px solid #2a2a2e; border-radius: 1.5rem; padding: 0.85rem; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45); margin-bottom: 0.9rem; }
+.kra-tab { padding: 0.24rem 0.55rem; border-radius: 0.65rem; font-size: 10px; font-weight: 800; color: #a3a3a3; background: #0a0a0c; border: 1px solid #262629; }
+.kra-tab.kra-active { background: linear-gradient(135deg, #f26419 0%, #c4420a 100%); color: #fff; border-color: rgba(255, 255, 255, 0.2); }
+.kra-track-wrap { position: relative; height: 40px; margin: 6px 14px 2px; }
 .kra-rail { position: absolute; top: 50%; left: 0; right: 0; height: 3px; transform: translateY(-50%); background: repeating-linear-gradient(90deg, #323238 0 6px, transparent 6px 11px); border-radius: 999px; }
-.kra-trail { position: absolute; top: 50%; left: 0; height: 3px; width: 0%; transform: translateY(-50%); background: linear-gradient(90deg, #9a3412 0%, #f26419 60%, #ff853b 100%); box-shadow: 0 0 10px rgba(242, 100, 25, 0.75); border-radius: 999px; animation: kraTrailMove 6.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
-.kra-node { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 999px; background: #141416; border: 2.5px solid #52525b; transform: translate(-50%, -50%); z-index: 2; }
-.kra-node-cn { left: 0%; animation: kraPulseCN 6.4s ease-in-out infinite; }
-.kra-node-ls { left: 50%; animation: kraPulseLS 6.4s ease-in-out infinite; }
-.kra-node-yg { left: 100%; animation: kraPulseYG 6.4s ease-in-out infinite; }
-.kra-vehicle { position: absolute; top: 50%; left: 0%; width: 28px; height: 28px; border-radius: 999px; background: linear-gradient(135deg, #ff7a29 0%, #ea580c 100%); border: 1.5px solid rgba(255, 255, 255, 0.55); box-shadow: 0 0 14px rgba(242, 100, 25, 0.8); display: flex; align-items: center; justify-content: center; z-index: 4; transform: translate(-50%, -50%); animation: kraVehicleMove 6.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
-.kra-vehicle svg { width: 15px; height: 15px; display: block; }
-@keyframes kraVehicleMove { 0% { left: 0%; opacity: 0; } 7% { left: 0%; opacity: 1; } 42% { left: 50%; opacity: 1; } 52% { left: 50%; opacity: 1; } 86% { left: 100%; opacity: 1; } 94% { left: 100%; opacity: 1; } 100% { left: 100%; opacity: 0; } }
-@keyframes kraTrailMove { 0% { width: 0%; opacity: 0; } 7% { width: 0%; opacity: 1; } 42% { width: 50%; opacity: 1; } 52% { width: 50%; opacity: 1; } 86% { width: 100%; opacity: 1; } 94% { width: 100%; opacity: 1; } 100% { width: 100%; opacity: 0; } }
-@keyframes kraPulseCN { 0%, 18%, 100% { border-color: #52525b; } 6%, 12% { border-color: #f26419; background: #f26419; } }
-@keyframes kraPulseLS { 0%, 38%, 60%, 100% { border-color: #52525b; background: #141416; } 44%, 53% { border-color: #f26419; background: #f26419; } }
-@keyframes kraPulseYG { 0%, 82%, 100% { border-color: #52525b; background: #141416; } 87%, 95% { border-color: #ffffff; background: #f26419; } }
-.kra-ring-progress { transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1); }
-@keyframes kgDonutCircleForm { 0% { stroke-dashoffset: 100; } 100% { stroke-dashoffset: 0; } }
-.kg-donut-sweep-mask { animation: kgDonutCircleForm 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-@keyframes kgDonutPop { 0% { opacity: 0.4; transform: rotate(-115deg) scale(0.9); } 100% { opacity: 1; transform: rotate(-90deg) scale(1); } }
-#kgDonutSvg.kg-donut-popping { animation: kgDonutPop 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.kra-trail { position: absolute; top: 50%; left: 0; height: 3px; width: 0%; transform: translateY(-50%); background: linear-gradient(90deg, #9a3412, #f26419, #ff853b); box-shadow: 0 0 10px rgba(242, 100, 25, 0.75); border-radius: 999px; animation: kraTrail 6.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
+.kra-node { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 999px; background: #141416; border: 2.5px solid #52525b; transform: translate(-50%, -50%); z-index: 2; }
+.kra-node-cn { left: 0%; animation: kraP1 6.2s infinite; } .kra-node-ls { left: 50%; animation: kraP2 6.2s infinite; } .kra-node-yg { left: 100%; animation: kraP3 6.2s infinite; }
+.kra-vehicle { position: absolute; top: 50%; left: 0%; width: 28px; height: 28px; border-radius: 999px; background: linear-gradient(135deg, #ff7a29, #ea580c); border: 1.5px solid rgba(255, 255, 255, 0.6); box-shadow: 0 0 14px rgba(242, 100, 25, 0.85); display: flex; align-items: center; justify-content: center; z-index: 4; transform: translate(-50%, -50%); animation: kraMove 6.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
+.kra-vehicle svg { width: 15px; height: 15px; }
+@keyframes kraMove { 0% { left: 0%; opacity: 0; } 7% { left: 0%; opacity: 1; } 44%, 52% { left: 50%; opacity: 1; } 88%, 94% { left: 100%; opacity: 1; } 100% { left: 100%; opacity: 0; } }
+@keyframes kraTrail { 0% { width: 0%; opacity: 0; } 7% { width: 0%; opacity: 1; } 44%, 52% { width: 50%; opacity: 1; } 88%, 94% { width: 100%; opacity: 1; } 100% { width: 100%; opacity: 0; } }
+@keyframes kraP1 { 0%, 16%, 100% { border-color: #52525b; } 6%, 12% { border-color: #f26419; background: #f26419; } }
+@keyframes kraP2 { 0%, 40%, 58%, 100% { border-color: #52525b; background: #141416; } 45%, 53% { border-color: #f26419; background: #f26419; } }
+@keyframes kraP3 { 0%, 84%, 100% { border-color: #52525b; background: #141416; } 89%, 95% { border-color: #fff; background: #f26419; } }
+.kra-ring-progress { transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes kgSpinIn { 0% { opacity: 0.35; transform: rotate(-165deg) scale(0.84); } 100% { opacity: 1; transform: rotate(-90deg) scale(1); } }
+#kgDonutSvg.kg-donut-popping { animation: kgSpinIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
-/* Second-Image Inspired Location Tracking Modal (Pure Brand: Orange & Black) */
-#kismetTrackModal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(8px); z-index: 65; display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
+/* Location Tracking Modal (Reference Image Layout — Brand Orange & Black) */
+#kismetTrackModal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(8px); z-index: 75; display: flex; align-items: flex-end; justify-content: center; padding: 8px; }
 #kismetTrackModal.hidden { display: none; }
-.ktm-sheet { width: 100%; max-width: 28rem; max-height: 92vh; overflow-y: auto; background: #141416; border: 1px solid #2a2a2e; border-radius: 1.75rem; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85); animation: ktmSheetUp 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-@keyframes ktmSheetUp { 0% { opacity: 0; transform: translateY(24px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-.ktm-map-box { position: relative; height: 210px; background: radial-gradient(circle at 75% 22%, #241710 0%, #141214 55%, #0a0a0c 100%); overflow: hidden; border-bottom: 1px solid #262629; }
-.ktm-progress-track { position: relative; height: 6px; background: #262629; border-radius: 999px; }
-.ktm-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #c4420a 0%, #f26419 65%, #ff853b 100%); box-shadow: 0 0 10px rgba(242, 100, 25, 0.55); transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1); }
-.ktm-progress-truck { position: absolute; top: 50%; transform: translate(-50%, -50%); transition: left 0.85s cubic-bezier(0.22, 1, 0.36, 1); z-index: 3; }
+.ktm-sheet { width: 100%; max-width: 28rem; max-height: 93vh; overflow-y: auto; background: #0a0a0c; border: 1px solid #2a2a2e; border-radius: 2rem; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.92); animation: ktmUp 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes ktmUp { 0% { opacity: 0; transform: translateY(28px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+.ktm-map-box { position: relative; height: 220px; background: radial-gradient(circle at 75% 24%, #2b160c 0%, #151214 55%, #0a0a0c 100%); overflow: hidden; }
+.ktm-card-body { position: relative; margin-top: -22px; background: #141416; border-top: 1px solid #2e2e33; border-radius: 1.85rem 1.85rem 0 0; padding: 12px 16px 18px; }
 .ktm-map-active-path { transition: stroke-dashoffset 0.95s cubic-bezier(0.22, 1, 0.36, 1); }
+.ktm-step-dot { width: 22px; height: 22px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 9px; border: 2px solid #3f3f46; background: #0a0a0c; color: #71717a; flex-shrink: 0; }
+.ktm-step-dot.done { background: #f26419; border-color: #ff853b; color: #fff; box-shadow: 0 0 12px rgba(242, 100, 25, 0.55); }
+.ktm-step-dot.active { background: #0a0a0c; border-color: #f26419; color: #f26419; box-shadow: 0 0 10px rgba(242, 100, 25, 0.45); }
+.ktm-step-line { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, #3f3f46 0 4px, transparent 4px 8px); }
+.ktm-step-line.done { background: repeating-linear-gradient(90deg, #f26419 0 4px, transparent 4px 8px); }
+.ktm-vehicle-stage { width: 104px; height: 104px; border-radius: 1.25rem; background: radial-gradient(circle at 50% 45%, rgba(242, 100, 25, 0.22), #0a0a0c 78%); border: 1px solid rgba(242, 100, 25, 0.32); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
 </style>
 
 <div id="kismetTrackModal" class="hidden" onclick="if(event.target===this) closeKismetTrackModal()">
     <div class="ktm-sheet no-scrollbar text-white">
         <div class="ktm-map-box">
-            <svg id="ktmMapSvg" viewBox="0 0 400 210" class="w-full h-full block">
+            <svg id="ktmMapSvg" viewBox="0 0 400 220" class="w-full h-full block">
                 <defs>
-                    <pattern id="ktmGrid" width="24" height="24" patternUnits="userSpaceOnUse">
-                        <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                    <pattern id="ktmGrid" width="22" height="22" patternUnits="userSpaceOnUse">
+                        <path d="M 22 0 L 0 0 0 22" fill="none" stroke="rgba(255,255,255,0.045)" stroke-width="1"/>
                     </pattern>
                 </defs>
-                <rect width="400" height="210" fill="url(#ktmGrid)"/>
-                <path d="M 0 85 Q 100 68 180 108 T 345 82 L 400 70" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
-                <path d="M 115 0 Q 150 75 130 138 T 160 210" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>
-                <path d="M 260 0 Q 285 82 250 148 T 295 210" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>
-                <text x="312" y="30" fill="rgba(255,255,255,0.18)" font-size="10" font-weight="800">CHINA</text>
-                <text x="192" y="88" fill="rgba(242,100,25,0.35)" font-size="10" font-weight="800">LASHIO</text>
-                <text x="52" y="196" fill="rgba(255,255,255,0.18)" font-size="10" font-weight="800">YANGON</text>
-
-                <!-- Route Path: China -> Lashio -> Yangon -->
-                <path id="ktmBasePath" d="M 340 44 C 296 74, 250 84, 206 112 C 156 142, 118 146, 68 170"
-                    fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="5 5"/>
-                <path id="ktmActivePath" class="ktm-map-active-path"
-                    d="M 340 44 C 296 74, 250 84, 206 112 C 156 142, 118 146, 68 170"
-                    fill="none" stroke="#f26419" stroke-width="4" stroke-linecap="round"/>
-
-                <!-- Checkpoints -->
-                <circle cx="340" cy="44" r="6" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/>
-                <text x="340" y="63" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800">တရုတ်</text>
-
-                <circle cx="206" cy="112" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/>
-                <text x="206" y="131" text-anchor="middle" fill="#fdba74" font-size="10" font-weight="800">လားရှိုး</text>
-
-                <circle cx="68" cy="170" r="8" fill="#f26419" fill-opacity="0.25"/>
-                <circle cx="68" cy="170" r="5" fill="#f26419" stroke="#ffffff" stroke-width="2"/>
-                <text x="68" y="188" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800">ရန်ကုန်</text>
-
-                <g id="ktmMapVehicle" transform="translate(340, 44)">
-                    <circle r="13" fill="#f26419" fill-opacity="0.25"/>
-                    <circle r="10" fill="#0a0a0c" stroke="#f26419" stroke-width="2"/>
-                    <text id="ktmMapVehicleEmoji" x="0" y="4" text-anchor="middle" font-size="11">🚚</text>
+                <rect width="400" height="220" fill="url(#ktmGrid)"/>
+                <path d="M 0 88 Q 100 68 180 108 T 345 82 L 400 70" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+                <path d="M 115 0 Q 150 75 130 138 T 160 220" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>
+                <path d="M 260 0 Q 285 82 250 148 T 295 220" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>
+                <path id="ktmBasePath" d="M 326 58 L 258 58 Q 244 58 244 72 L 244 102 Q 244 116 230 116 L 154 116 Q 140 116 140 130 L 140 156 Q 140 170 126 170 L 82 170" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="4" stroke-linecap="round"/>
+                <path id="ktmActivePath" class="ktm-map-active-path" d="M 326 58 L 258 58 Q 244 58 244 72 L 244 102 Q 244 116 230 116 L 154 116 Q 140 116 140 130 L 140 156 Q 140 170 126 170 L 82 170" fill="none" stroke="#f26419" stroke-width="4.5" stroke-linecap="round"/>
+                <circle cx="326" cy="58" r="14" fill="#f26419" fill-opacity="0.24"/>
+                <circle cx="326" cy="58" r="6" fill="#f26419" stroke="#fff" stroke-width="2.5"/>
+                <text x="326" y="81" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">တရုတ်</text>
+                <circle cx="192" cy="116" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/>
+                <text x="192" y="135" text-anchor="middle" fill="#fdba74" font-size="10" font-weight="800">လားရှိုး</text>
+                <circle cx="82" cy="170" r="13" fill="#0a0a0c" stroke="#f26419" stroke-width="2"/>
+                <text x="82" y="174" text-anchor="middle" fill="#f26419" font-size="10" font-weight="900">▲</text>
+                <text x="82" y="196" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">ရန်ကုန်</text>
+                <g id="ktmMapVehicle" transform="translate(326, 58)">
+                    <circle r="13" fill="#f26419" fill-opacity="0.32"/>
+                    <circle r="9.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2"/>
+                    <text id="ktmMapVehicleEmoji" x="0" y="4" text-anchor="middle" font-size="10">🚚</text>
                 </g>
             </svg>
-
-            <div class="absolute top-3 left-3 bg-[#0a0a0c]/90 border border-orange-500/40 px-3 py-1.5 rounded-xl">
-                <div class="text-xs font-extrabold text-white">Location Tracking</div>
-                <div id="ktmHeroSub" class="text-[10px] text-orange-400 font-bold">တရုတ် ➔ လားရှိုး ➔ ရန်ကုန်</div>
+            <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
+                <button type="button" onclick="closeKismetTrackModal()" class="w-8 h-8 rounded-full bg-[#0a0a0c]/90 border border-neutral-700 text-white flex items-center justify-center text-xs btn-bounce"><i class="fa-solid fa-arrow-left"></i></button>
+                <div class="px-3.5 py-1 rounded-full bg-[#0a0a0c]/90 border border-orange-500/35 text-xs font-extrabold text-white">Location Tracking</div>
+                <button type="button" onclick="copyActiveTrackId()" class="w-8 h-8 rounded-full bg-[#0a0a0c]/90 border border-neutral-700 text-orange-400 flex items-center justify-center text-xs btn-bounce"><i class="fa-regular fa-copy"></i></button>
             </div>
-            <button type="button" onclick="closeKismetTrackModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[#0a0a0c]/90 border border-neutral-700 text-white flex items-center justify-center text-xs btn-bounce">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
         </div>
 
-        <!-- Horizontal Route Progress Strip (Second Image Style in Orange & Black) -->
-        <div class="px-4 py-3 bg-[#0a0a0c] border-b border-neutral-800 space-y-2">
-            <div class="flex items-center justify-between text-[11px] font-extrabold">
-                <div><span class="text-neutral-400">From:</span> <span class="text-white">တရုတ်</span></div>
-                <span id="ktmPctLabel" class="text-orange-400">25%</span>
-                <div><span class="text-neutral-400">To:</span> <span id="ktmDestPill" class="text-orange-400">ရန်ကုန်</span></div>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
-                <div class="flex-1 ktm-progress-track">
-                    <div id="ktmBarFill" class="ktm-progress-fill" style="width: 25%"></div>
-                    <div id="ktmBarTruck" class="ktm-progress-truck" style="left: 25%">
-                        <span id="ktmBarIcon" class="w-6 h-6 rounded-full bg-[#141416] border border-orange-500 flex items-center justify-center text-[11px]">🚚</span>
-                    </div>
+        <div class="ktm-card-body space-y-3.5">
+            <div class="w-10 h-1 rounded-full bg-neutral-700 mx-auto"></div>
+
+            <!-- Booking ID + Status -->
+            <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <div id="ktmCourierName" class="text-[11px] font-semibold text-neutral-400">Booking / Tracking Id:</div>
+                    <div id="ktmTrackIdDisplay" class="text-lg font-extrabold text-white font-mono truncate mt-0.5">-</div>
                 </div>
-                <span class="w-2.5 h-2.5 rounded-full border-2 border-orange-500 bg-[#141416] shrink-0"></span>
+                <div class="text-right shrink-0">
+                    <div class="text-[10px] text-neutral-500">Status</div>
+                    <span id="ktmStatusPill" class="inline-block mt-0.5 px-3 py-1 rounded-full bg-orange-600/20 border border-orange-500/50 text-orange-400 text-[11px] font-extrabold">Transit</span>
+                </div>
             </div>
-            <div id="ktmStageSummary" class="text-[11px] text-neutral-300 font-bold truncate">လားရှိုးသို့ ပို့ဆောင်နေဆဲ</div>
-        </div>
 
-        <!-- Shipment ID, Edit & Timeline Sheet -->
-        <div class="p-4 space-y-3">
-            <div class="bg-[#0a0a0c] border border-neutral-800 rounded-2xl p-3 space-y-2">
-                <div class="flex items-center justify-between gap-2">
+            <!-- 3-Checkpoint Stepper (China - Lashio - Yangon) -->
+            <div class="space-y-1.5">
+                <div class="flex items-center gap-1.5">
+                    <span id="ktmStep1" class="ktm-step-dot done"><i class="fa-solid fa-check"></i></span>
+                    <span id="ktmLine1" class="ktm-step-line"></span>
+                    <span id="ktmStep2" class="ktm-step-dot"><i class="fa-solid fa-check"></i></span>
+                    <span id="ktmLine2" class="ktm-step-line"></span>
+                    <span id="ktmStep3" class="ktm-step-dot"><i class="fa-solid fa-check"></i></span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] font-extrabold">
+                    <div><div class="text-[9px] text-neutral-500 font-semibold">Origin</div><div class="text-white">တရုတ်</div></div>
+                    <div class="text-center"><div class="text-[9px] text-neutral-500 font-semibold">Transit Hub</div><div class="text-orange-400">လားရှိုး</div></div>
+                    <div class="text-right"><div class="text-[9px] text-neutral-500 font-semibold">Destination</div><div id="ktmDestPill" class="text-white">ရန်ကုန်</div></div>
+                </div>
+            </div>
+
+            <!-- Reference-Style Info Grid (Left) + Dynamic Vehicle Graphic (Right) -->
+            <div class="flex items-center gap-3 pt-1">
+                <div class="flex-1 grid grid-cols-2 gap-x-2 gap-y-2.5 text-xs min-w-0">
+                    <div><div class="text-[10px] text-neutral-500">From</div><div class="font-extrabold text-white truncate">တရုတ်</div></div>
+                    <div><div class="text-[10px] text-neutral-500">To</div><div id="ktmGridTo" class="font-extrabold text-orange-400 truncate">ရန်ကုန်</div></div>
+                    <div><div class="text-[10px] text-neutral-500">Customer</div><div id="ktmGridCustomer" class="font-extrabold text-white truncate">-</div></div>
+                    <div><div class="text-[10px] text-neutral-500">Order Cost</div><div id="ktmGridCost" class="font-extrabold text-orange-400 truncate">0 Ks</div></div>
+                    <div><div class="text-[10px] text-neutral-500">Quantity</div><div id="ktmGridQty" class="font-extrabold text-white truncate">1 ခု</div></div>
+                    <div><div class="text-[10px] text-neutral-500">Weight</div><div id="ktmGridKg" class="font-extrabold text-orange-400 truncate">0 Kg</div></div>
+                </div>
+                <div class="ktm-vehicle-stage">
+                    <div id="ktmBigVehicleSvg" class="w-16 h-16 flex items-center justify-center"></div>
+                    <span id="ktmBigVehicleLabel" class="text-[10px] font-extrabold text-orange-400 mt-1">Air</span>
+                </div>
+            </div>
+
+            <!-- Courier / Item Bar (Bottom Pill like Reference Image) -->
+            <div class="flex items-center justify-between gap-2 bg-[#0a0a0c] border border-neutral-800 rounded-2xl p-2.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-full bg-orange-600/20 border border-orange-500/50 text-orange-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-box-open"></i></div>
                     <div class="min-w-0">
-                        <span id="ktmCourierName" class="text-[11px] font-extrabold text-orange-400">Courier</span>
-                        <div id="ktmTrackIdDisplay" class="text-sm font-extrabold text-white font-mono truncate">-</div>
+                        <div id="ktmItemName" class="text-xs font-extrabold text-white truncate">ပစ္စည်းအမည်</div>
+                        <div id="ktmItemSource" class="text-[10px] text-neutral-400 truncate">Source • Status</div>
                     </div>
-                    <button type="button" onclick="copyActiveTrackId()" class="px-3 py-1.5 rounded-xl bg-[#141416] hover:bg-neutral-800 border border-neutral-700 text-white text-xs font-bold btn-bounce">Copy</button>
                 </div>
-                <div class="flex items-center gap-1.5 pt-1 border-t border-neutral-800/80">
-                    <input type="text" id="ktmTrackInput" placeholder="Tracking ID ထည့်/ပြင်ရန်..." class="flex-1 px-2.5 py-1.5 rounded-xl bg-[#141416] border border-neutral-700 text-xs text-white font-mono outline-none focus:ring-2 focus:ring-orange-500">
-                    <button type="button" onclick="saveActiveTrackId()" class="px-3 py-1.5 rounded-xl burnt-orange-btn text-white text-[11px] font-bold btn-bounce">သိမ်းမည်</button>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="openExternalTrack('17track')" title="17TRACK" class="w-9 h-9 rounded-full burnt-orange-btn text-white flex items-center justify-center text-xs btn-bounce"><i class="fa-solid fa-magnifying-glass-location"></i></button>
+                    <button type="button" onclick="openExternalTrack('kuaidi')" title="Kuaidi100" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center text-xs btn-bounce"><i class="fa-solid fa-globe"></i></button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-                <button type="button" onclick="openExternalTrack('17track')" class="py-2.5 rounded-xl burnt-orange-btn text-white text-xs font-extrabold flex items-center justify-center gap-1.5 btn-bounce">
-                    <i class="fa-solid fa-magnifying-glass-location"></i><span>17TRACK စစ်မည်</span>
-                </button>
-                <button type="button" onclick="openExternalTrack('kuaidi')" class="py-2.5 rounded-xl bg-[#0a0a0c] hover:bg-neutral-900 border border-orange-500/40 text-orange-400 text-xs font-extrabold flex items-center justify-center gap-1.5 btn-bounce">
-                    <i class="fa-solid fa-globe"></i><span>Kuaidi100</span>
-                </button>
-            </div>
-
-            <div class="bg-[#0a0a0c] border border-neutral-800 rounded-2xl p-3 text-xs space-y-1">
-                <div class="flex items-center justify-between gap-2">
-                    <span id="ktmItemName" class="font-extrabold text-white truncate">ပစ္စည်းအမည်</span>
-                    <span id="ktmItemMethodBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-orange-950/70 text-orange-400 border border-orange-500/30 font-bold">Air</span>
-                </div>
-                <div id="ktmItemMeta" class="text-[11px] text-neutral-400"></div>
-            </div>
-
-            <div class="bg-[#0a0a0c] border border-neutral-800 rounded-2xl p-3.5">
-                <div class="text-[11px] font-extrabold text-orange-400 mb-2.5">တရုတ် - လားရှိုး - ရန်ကုန် မှတ်တမ်း</div>
-                <div id="ktmTimelineList" class="space-y-3 pl-2"></div>
+            <!-- Edit Tracking ID Row -->
+            <div class="flex items-center gap-1.5">
+                <input type="text" id="ktmTrackInput" placeholder="Tracking ID ထည့်/ပြင်ရန်..." class="flex-1 px-3 py-2 rounded-xl bg-[#0a0a0c] border border-neutral-700 text-xs text-white font-mono outline-none focus:ring-2 focus:ring-orange-500">
+                <button type="button" onclick="saveActiveTrackId()" class="px-3.5 py-2 rounded-xl burnt-orange-btn text-white text-xs font-extrabold btn-bounce shrink-0">သိမ်း</button>
             </div>
         </div>
     </div>
