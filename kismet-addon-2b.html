@@ -5,33 +5,13 @@
     window.__kismetAddon2BLoaded = true;
     const getCap = (n) => (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins[n] : null;
 
-    // 3D-Style Brand Orange & Black Vehicle Illustrations (Replaces Parcel Box)
     const BIG_VEHICLES = {
-        Air: `<svg viewBox="0 0 64 64" class="w-16 h-16">
-            <defs><linearGradient id="ogA" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs>
-            <path d="M56 26L38 24 27 8h-6l5 16-12 1-5-6h-4l3 10-3 10h4l5-6 12 1-5 16h6l11-16 18-2c3 0 5-1.5 5-3s-2-3-5-3z" fill="url(#ogA)" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M36 28h14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-        </svg>`,
-        Land: `<svg viewBox="0 0 64 64" class="w-16 h-16">
-            <defs><linearGradient id="ogL" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs>
-            <rect x="6" y="18" width="34" height="24" rx="4" fill="url(#ogL)" stroke="#fff" stroke-width="1.5"/>
-            <path d="M40 24h11l7 8v10H40V24z" fill="#1f1f23" stroke="#f26419" stroke-width="2"/>
-            <path d="M44 27h6l4 5H44v-5z" fill="#ff8a3d" opacity="0.8"/>
-            <circle cx="18" cy="45" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/>
-            <circle cx="48" cy="45" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/>
-            <rect x="11" y="24" width="16" height="3" rx="1.5" fill="#fff" opacity="0.45"/>
-        </svg>`,
-        Post: `<svg viewBox="0 0 64 64" class="w-16 h-16">
-            <defs><linearGradient id="ogP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs>
-            <path d="M18 24c0-8 6-14 14-14s14 6 14 14v22H18V24z" fill="url(#ogP)" stroke="#fff" stroke-width="1.5"/>
-            <rect x="27" y="46" width="10" height="10" rx="2" fill="#27272a" stroke="#f26419" stroke-width="1.5"/>
-            <rect x="23" y="22" width="18" height="4" rx="2" fill="#0a0a0c"/>
-            <rect x="25" y="31" width="14" height="8" rx="1.5" fill="#fff" opacity="0.88"/>
-            <path d="M25 32l7 4.5 7-4.5" fill="none" stroke="#c4420a" stroke-width="1.6"/>
-        </svg>`
+        Air: `<svg viewBox="0 0 64 64" class="w-16 h-16"><defs><linearGradient id="ogA" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs><path d="M56 26L38 24 27 8h-6l5 16-12 1-5-6h-4l3 10-3 10h4l5-6 12 1-5 16h6l11-16 18-2c3 0 5-1.5 5-3s-2-3-5-3z" fill="url(#ogA)" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+        Land: `<svg viewBox="0 0 64 64" class="w-16 h-16"><defs><linearGradient id="ogL" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs><rect x="6" y="18" width="34" height="24" rx="4" fill="url(#ogL)" stroke="#fff" stroke-width="1.5"/><path d="M40 24h11l7 8v10H40V24z" fill="#1f1f23" stroke="#f26419" stroke-width="2"/><path d="M44 27h6l4 5H44v-5z" fill="#ff8a3d" opacity="0.8"/><circle cx="18" cy="45" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/><circle cx="48" cy="45" r="5.5" fill="#0a0a0c" stroke="#f26419" stroke-width="2.5"/></svg>`,
+        Post: `<svg viewBox="0 0 64 64" class="w-16 h-16"><defs><linearGradient id="ogP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#c4420a"/></linearGradient></defs><path d="M18 24c0-8 6-14 14-14s14 6 14 14v22H18V24z" fill="url(#ogP)" stroke="#fff" stroke-width="1.5"/><rect x="27" y="46" width="10" height="10" rx="2" fill="#27272a" stroke="#f26419" stroke-width="1.5"/><rect x="23" y="22" width="18" height="4" rx="2" fill="#0a0a0c"/><rect x="25" y="31" width="14" height="8" rx="1.5" fill="#fff" opacity="0.88"/></svg>`
     };
 
-    let curItemId = null, curGateId = null, curTrackText = '';
+    let curItemId = null, curGateId = null, curTrackText = '', fallbackMethod = 'Air';
     const extractId = (t) => { const m = String(t || '').trim().match(/\b([A-Za-z]{1,4}\d{6,22}|\d{8,22})\b/); return m ? m[1].toUpperCase() : ''; };
     const detectCourier = (id) => {
         if (!id) return 'Booking / Tracking Id:';
@@ -48,9 +28,12 @@
             if (g) { const it = (g.items || []).find(x => x && x.id === itemId); if (it) return { item: it, gate: g }; }
         }
         const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined') ? (allRouteRecords[ROUTE_KEY] || []) : [];
-        const d = list.find(x => x && x.id === itemId);
-        if (d) return { item: d, gate: null };
-        if (typeof gateShipments !== 'undefined') {
+        if (itemId) {
+            const d = list.find(x => x && x.id === itemId); if (d) return { item: d, gate: null };
+        } else if (list.length > 0) {
+            return { item: list[0], gate: null };
+        }
+        if (itemId && typeof gateShipments !== 'undefined') {
             for (const g of gateShipments) { const it = (g.items || []).find(x => x && x.id === itemId); if (it) return { item: it, gate: g }; }
         }
         return null;
@@ -58,9 +41,9 @@
 
     function renderModal() {
         const found = findItem(curItemId, curGateId);
-        const item = found ? found.item : { name: 'ပစ္စည်း', qty: 1, method: 'Air', note: '' };
+        const item = found ? found.item : { name: 'တရုတ် - လားရှိုး - ရန်ကုန်', qty: 1, method: fallbackMethod, note: '' };
         const gate = found ? found.gate : null;
-        const m = BIG_VEHICLES[item.method] ? item.method : 'Air';
+        const m = BIG_VEHICLES[item.method] ? item.method : (BIG_VEHICLES[fallbackMethod] ? fallbackMethod : 'Air');
         const emoji = m === 'Air' ? '✈️' : (m === 'Post' ? '📮' : '🚚');
 
         let pct = 28, pill = 'Transit';
@@ -74,17 +57,12 @@
         document.getElementById('ktmGridTo').innerText = destText;
         document.getElementById('ktmMapVehicleEmoji').textContent = emoji;
 
-        // 3-Step Indicator States
-        const s2 = document.getElementById('ktmStep2'), s3 = document.getElementById('ktmStep3');
-        const l1 = document.getElementById('ktmLine1'), l2 = document.getElementById('ktmLine2');
-        const arrivedLS = Boolean(item.arrived || gate);
-        const doneYG = Boolean(gate && gate.checked);
-        s2.className = 'ktm-step-dot ' + (arrivedLS ? 'done' : 'active');
-        l1.className = 'ktm-step-line ' + (arrivedLS ? 'done' : '');
-        s3.className = 'ktm-step-dot ' + (doneYG ? 'done' : (gate ? 'active' : ''));
-        l2.className = 'ktm-step-line ' + (doneYG ? 'done' : '');
+        const arrivedLS = Boolean(item.arrived || gate), doneYG = Boolean(gate && gate.checked);
+        document.getElementById('ktmStep2').className = 'ktm-step-dot ' + (arrivedLS ? 'done' : 'active');
+        document.getElementById('ktmLine1').className = 'ktm-step-line ' + (arrivedLS ? 'done' : '');
+        document.getElementById('ktmStep3').className = 'ktm-step-dot ' + (doneYG ? 'done' : (gate ? 'active' : ''));
+        document.getElementById('ktmLine2').className = 'ktm-step-line ' + (doneYG ? 'done' : '');
 
-        // Map Path & Vehicle Animation
         const ap = document.getElementById('ktmActivePath'), vg = document.getElementById('ktmMapVehicle');
         if (ap && vg && typeof ap.getTotalLength === 'function') {
             const len = ap.getTotalLength(), tgt = len * (pct / 100), pt = ap.getPointAtLength(tgt);
@@ -94,7 +72,6 @@
             requestAnimationFrame(() => { ap.style.transition = ''; ap.style.strokeDashoffset = String(Math.max(0, len - tgt)); });
         }
 
-        // Info Grid + Dynamic Big Vehicle Illustration (Air / Land / Post)
         const ex = extractId(item.note);
         curTrackText = ex || (item.note ? String(item.note).trim() : '');
         document.getElementById('ktmCourierName').innerText = detectCourier(ex);
@@ -111,12 +88,12 @@
         document.getElementById('ktmItemSource').innerText = `${item.source || 'China'} • ${pill}`;
     }
 
-    window.openKismetTrackModal = function(itemId, gateId) {
+    window.openKismetTrackModal = function(itemId, gateId, methodHint) {
         curItemId = itemId || null; curGateId = gateId || null;
+        if (methodHint) fallbackMethod = methodHint;
         renderModal();
         const modal = document.getElementById('kismetTrackModal');
         if (modal) modal.classList.remove('hidden');
-        try { const H = getCap('Haptics'); if (H && H.impact) H.impact({ style: 'LIGHT' }); } catch (e) {}
     };
     window.closeKismetTrackModal = function() { const m = document.getElementById('kismetTrackModal'); if (m) m.classList.add('hidden'); };
     window.copyActiveTrackId = function() {
@@ -138,9 +115,7 @@
         window.open(p === 'kuaidi' ? `https://m.kuaidi100.com/result.jsp?nu=${encodeURIComponent(id)}` : `https://t.17track.net/en#nums=${encodeURIComponent(id)}`, '_blank', 'noopener');
     };
 
-    // MAKE ITEM CARDS CLICKABLE + ADD ORANGE TRACK BUTTONS
-    function bindItemCardsAndButtons() {
-        // Page 1 Order Cards
+    function bindItemCards() {
         document.querySelectorAll('#orderListContainer button[onclick^="transferToShop("]').forEach(btn => {
             const m = (btn.getAttribute('onclick') || '').match(/transferToShop\('([^']+)'\)/); if (!m) return;
             const id = m[1], card = btn.closest('div[class*="rounded-"]');
@@ -152,13 +127,12 @@
             if (p && !p.querySelector('.ktm-inject-btn')) {
                 p.classList.add('gap-1.5', 'flex-wrap');
                 const b = document.createElement('button'); b.type = 'button';
-                b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-lg bg-orange-600/20 text-orange-400 border border-orange-500/45 text-[10px] font-extrabold btn-bounce flex items-center gap-1';
+                b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-lg bg-orange-600/20 text-orange-400 border border-orange-500/45 text-[10px] font-extrabold flex items-center gap-1';
                 b.innerHTML = '<i class="fa-solid fa-location-dot"></i> Track မြေပုံ';
                 b.onclick = (e) => { e.stopPropagation(); window.openKismetTrackModal(id); };
                 p.appendChild(b);
             }
         });
-        // Page 2 Lashio Check Cards
         document.querySelectorAll('#lashioCheckList button[onclick^="setShippingMethod("]').forEach(btn => {
             const m = (btn.getAttribute('onclick') || '').match(/setShippingMethod\('([^']+)',\s*'Air'\)/); if (!m) return;
             const id = m[1], card = btn.closest('div[class*="rounded-"]');
@@ -169,24 +143,14 @@
             const row = btn.parentElement && btn.parentElement.parentElement;
             if (row && !row.querySelector('.ktm-inject-btn')) {
                 const b = document.createElement('button'); b.type = 'button';
-                b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-xl bg-[#0a0a0c] text-orange-400 border border-orange-500/50 text-[11px] font-extrabold btn-bounce shrink-0 flex items-center gap-1';
+                b.className = 'ktm-inject-btn px-2.5 py-1.5 rounded-xl bg-[#0a0a0c] text-orange-400 border border-orange-500/50 text-[11px] font-extrabold shrink-0 flex items-center gap-1';
                 b.innerHTML = '<i class="fa-solid fa-location-dot"></i> Track';
                 b.onclick = (e) => { e.stopPropagation(); window.openKismetTrackModal(id); };
                 row.appendChild(b);
             }
         });
-        // Gate Detail Cards
-        document.querySelectorAll('#gateDetailBody input[onchange^="editGateItemKg("]').forEach(inp => {
-            const m = (inp.getAttribute('onchange') || '').match(/editGateItemKg\('([^']+)'/); if (!m) return;
-            const id = m[1], card = inp.closest('div[class*="rounded-"]');
-            if (card && !card.dataset.ktmBound) {
-                card.dataset.ktmBound = '1'; card.style.cursor = 'pointer';
-                card.addEventListener('click', (e) => { if (!e.target.closest('button,input,select,a')) window.openKismetTrackModal(id, typeof activeGateId !== 'undefined' ? activeGateId : null); });
-            }
-        });
     }
 
-    // NATIVE NOTIFICATIONS & VIBRATION
     let notiReady = false;
     async function initNoti() {
         const LN = getCap('LocalNotifications'); if (!LN || notiReady) return;
@@ -197,11 +161,6 @@
         } catch (e) {}
     }
 
-    if (typeof window.updateNavigationUI === 'function') { const o = window.updateNavigationUI; window.updateNavigationUI = function() { const r = o.apply(this, arguments); if (window.KISMET_AFTER_NAV) window.KISMET_AFTER_NAV(); bindItemCardsAndButtons(); return r; }; }
-    if (typeof window.switchKgRouteTab === 'function') { const o = window.switchKgRouteTab; window.switchKgRouteTab = function(t) { const r = o.apply(this, arguments); if (window.KISMET_SET_METHOD) window.KISMET_SET_METHOD(t, true); if (window.KISMET_ANIMATE_DONUT) setTimeout(() => window.KISMET_ANIMATE_DONUT(), 30); return r; }; }
-    if (typeof window.setShippingMethod === 'function') { const o = window.setShippingMethod; window.setShippingMethod = function(id, m) { const r = o.apply(this, arguments); if (window.KISMET_SET_METHOD) window.KISMET_SET_METHOD(m, true); return r; }; }
-    if (typeof window.renderPage4KgCalculator === 'function') { const o = window.renderPage4KgCalculator; window.renderPage4KgCalculator = function() { const r = o.apply(this, arguments); if (window.KISMET_ANIMATE_DONUT) setTimeout(() => window.KISMET_ANIMATE_DONUT(), 20); return r; }; }
-    if (typeof window.renderAll === 'function') { const o = window.renderAll; window.renderAll = function() { const r = o.apply(this, arguments); if (window.KISMET_SYNC_PANEL) window.KISMET_SYNC_PANEL(false); bindItemCardsAndButtons(); return r; }; }
     if (typeof window.triggerNotificationAlert === 'function') {
         const o = window.triggerNotificationAlert;
         window.triggerNotificationAlert = function(sender, msg) {
@@ -214,7 +173,7 @@
         };
     }
 
-    setTimeout(() => { bindItemCardsAndButtons(); initNoti(); }, 200);
-    setInterval(bindItemCardsAndButtons, 1200);
+    setTimeout(() => { bindItemCards(); initNoti(); }, 250);
+    setInterval(bindItemCards, 1200);
 })();
-                                      </script>
+                    </script>
