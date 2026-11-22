@@ -37,13 +37,21 @@ if (!fs.existsSync("1000533185.png")) {
     );
 }
 
+let addonsCombined = "";
 ["kismet-addon-1.html", "kismet-addon-2.html", "kismet-addon-2b.html"].forEach(f => {
     if (fs.existsSync(f)) {
         const content = cleanAddon(fs.readFileSync(f, "utf8"));
         console.log("Injecting:", f, content.length, "bytes");
-        html = html.replace(/<\/body>/i, () => "\n" + content + "\n</body>");
+        addonsCombined += "\n" + content + "\n";
     }
 });
+
+const lastBodyIdx = html.toLowerCase().lastIndexOf("</body>");
+if (lastBodyIdx !== -1) {
+    html = html.slice(0, lastBodyIdx) + addonsCombined + html.slice(lastBodyIdx);
+} else {
+    html += addonsCombined;
+}
 
 fs.writeFileSync("www/index.html", html, "utf8");
 run('npx cap init "KISMET" "com.kismet.app" --web-dir www');
