@@ -27,19 +27,35 @@ let html = fs.readFileSync("www/index.html", "utf8");
 html = html.replace(/https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/6\.4\.0\/css\/all\.min\.css/g, "./fa/css/all.min.css");
 html = html.replace(/https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/html2canvas\/1\.4\.1\/html2canvas\.min\.js/g, "./vendor/html2canvas.min.js");
 
-let addons = "";
-["kismet-addon-1.html", "kismet-addon-2.html", "kismet-addon-2b.html"].forEach(f => {
-    if (fs.existsSync(f)) {
-        const txt = fs.readFileSync(f, "utf8");
-        console.log("INJECTED ADDON:", f, "LENGTH:", txt.length);
-        addons += "\n" + txt + "\n";
-    } else {
-        console.log("MISSING ADDON:", f);
-    }
-});
+if (!fs.existsSync("1000533185.png")) {
+    html = html.replace(
+        '<img src="1000533185.png" alt="KISMET" class="h-6 object-contain inline-block">',
+        '<span class="text-base font-extrabold tracking-widest text-white">KISMET</span>'
+    );
+}
+
+let injectHtml = "";
+if (fs.existsSync("kismet-addon-1.html")) {
+    let a1 = fs.readFileSync("kismet-addon-1.html", "utf8");
+    if (/<style/i.test(a1) && !/<\/style>/i.test(a1)) a1 += "\n</style>\n";
+    injectHtml += "\n" + a1 + "\n";
+}
+
+function extractJs(file, outName) {
+    if (!fs.existsSync(file)) return;
+    let raw = fs.readFileSync(file, "utf8");
+    const m = raw.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+    let js = m ? m[1] : raw.replace(/<!--[\s\S]*?-->/g, "").replace(/<\/?script[^>]*>/gi, "");
+    fs.writeFileSync("www/" + outName, js, "utf8");
+    run("node --check www/" + outName);
+    injectHtml += `\n<script src="./${outName}"></script>\n`;
+}
+
+extractJs("kismet-addon-2.html", "kismet-addon-2.js");
+extractJs("kismet-addon-2b.html", "kismet-addon-2b.js");
 
 const idx = html.toLowerCase().lastIndexOf("</body>");
-html = idx !== -1 ? (html.slice(0, idx) + addons + html.slice(idx)) : (html + addons);
+html = idx !== -1 ? (html.slice(0, idx) + injectHtml + html.slice(idx)) : (html + injectHtml);
 fs.writeFileSync("www/index.html", html, "utf8");
 
 run('npx cap init "KISMET" "com.kismet.app" --web-dir www');
