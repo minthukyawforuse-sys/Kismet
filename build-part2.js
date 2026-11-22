@@ -34,28 +34,14 @@ if (!fs.existsSync("1000533185.png")) {
     );
 }
 
-let injectHtml = "";
-if (fs.existsSync("kismet-addon-1.html")) {
-    let a1 = fs.readFileSync("kismet-addon-1.html", "utf8");
-    if (/<style/i.test(a1) && !/<\/style>/i.test(a1)) a1 += "\n</style>\n";
-    injectHtml += "\n" + a1 + "\n";
+if (fs.existsSync("kismet-all.js")) {
+    fs.copyFileSync("kismet-all.js", "www/kismet-all.js");
+    run("node --check www/kismet-all.js");
+    const idx = html.toLowerCase().lastIndexOf("</body>");
+    const tag = '\n<script src="./kismet-all.js"></script>\n';
+    html = idx !== -1 ? (html.slice(0, idx) + tag + html.slice(idx)) : (html + tag);
 }
 
-function extractJs(file, outName) {
-    if (!fs.existsSync(file)) return;
-    let raw = fs.readFileSync(file, "utf8");
-    const m = raw.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
-    let js = m ? m[1] : raw.replace(/<!--[\s\S]*?-->/g, "").replace(/<\/?script[^>]*>/gi, "");
-    fs.writeFileSync("www/" + outName, js, "utf8");
-    run("node --check www/" + outName);
-    injectHtml += `\n<script src="./${outName}"></script>\n`;
-}
-
-extractJs("kismet-addon-2.html", "kismet-addon-2.js");
-extractJs("kismet-addon-2b.html", "kismet-addon-2b.js");
-
-const idx = html.toLowerCase().lastIndexOf("</body>");
-html = idx !== -1 ? (html.slice(0, idx) + injectHtml + html.slice(idx)) : (html + injectHtml);
 fs.writeFileSync("www/index.html", html, "utf8");
 
 run('npx cap init "KISMET" "com.kismet.app" --web-dir www');
