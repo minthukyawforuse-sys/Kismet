@@ -38,7 +38,7 @@ jobs:
           cp *.png *.jpg *.jpeg www/ 2>/dev/null || true
 
           npm init -y
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @fortawesome/fontawesome-free@6 html2canvas@1.4.1
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/local-notifications@6 @capacitor/haptics@6 @fortawesome/fontawesome-free@6 html2canvas@1.4.1
 
           cp -r node_modules/@fortawesome/fontawesome-free/css node_modules/@fortawesome/fontawesome-free/webfonts www/fa/
           cp node_modules/html2canvas/dist/html2canvas.min.js www/vendor/html2canvas.min.js
@@ -55,7 +55,7 @@ jobs:
           npx cap init "KISMET" "com.kismet.app" --web-dir www
           npx cap add android
           npx cap sync android
-          sed -i 's|<uses-permission android:name="android.permission.INTERNET" />|<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.VIBRATE" />|' android/app/src/main/AndroidManifest.xml
+          sed -i 's|<uses-permission android:name="android.permission.INTERNET" />|<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.VIBRATE" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />|' android/app/src/main/AndroidManifest.xml
 
       - name: Set App Icon
         run: |
@@ -89,4 +89,4 @@ jobs:
         with:
           name: KISMET-APK
           path: KISMET.apk
-
+          
