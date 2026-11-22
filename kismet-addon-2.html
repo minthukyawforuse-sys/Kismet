@@ -1,108 +1,130 @@
 <!-- KISMET ADDON 2A: GALLERY SAVER, ROUTE PANEL & KG% ANIMATION -->
 <script>
-(function initKismetAddonPartA() {
+(function () {
     if (window.__kismetAddon2ALoaded) return;
     window.__kismetAddon2ALoaded = true;
+
     const getCap = (n) => (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins[n] : null;
     const haptic = () => { try { const H = getCap('Haptics'); if (H && H.impact) H.impact({ style: 'LIGHT' }); else if (navigator.vibrate) navigator.vibrate(25); } catch (e) {} };
     const blobToB64 = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onloadend = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
 
-    // 1. NATIVE ANDROID GALLERY & EXCEL SAVER
+    // 1. NATIVE GALLERY & EXCEL SAVER
     function interceptSave(a) {
-        const saver = getCap('KismetSaver'); if (!saver || !a) return false;
-        const href = a.href || a.getAttribute('href') || '';
-        const dl = a.download || a.getAttribute('download') || ('KISMET_' + Date.now() + '.png');
-        if (!href) return false;
-        if (href.startsWith('data:image/')) {
-            saver.saveImage({ base64: href, filename: dl })
-                .then(() => { if (typeof showToast === 'function') showToast('✅ Gallery (Pictures/KISMET) ထဲ သိမ်းပြီးပါပြီ'); haptic(); })
-                .catch(e => { if (typeof showToast === 'function') showToast('⚠️ Gallery သိမ်းမရပါ: ' + (e && e.message ? e.message : 'Error')); });
-            return true;
-        }
-        if (href.startsWith('blob:')) {
-            fetch(href).then(r => r.blob()).then(b => {
-                if ((b.type && b.type.startsWith('image/')) || /\.(png|jpg|jpeg|webp)$/i.test(dl)) {
-                    return blobToB64(b).then(url => saver.saveImage({ base64: url, filename: dl }))
-                        .then(() => { if (typeof showToast === 'function') showToast('✅ Gallery (Pictures/KISMET) ထဲ သိမ်းပြီးပါပြီ'); haptic(); });
-                }
-                return b.text().then(t => saver.saveFile({ text: t, filename: dl, mime: b.type || 'text/csv' }))
-                    .then(() => { if (typeof showToast === 'function') showToast('✅ Download/KISMET ထဲ သိမ်းပြီးပါပြီ'); haptic(); });
-            }).catch(e => { if (typeof showToast === 'function') showToast('⚠️ သိမ်းမရပါ: ' + (e && e.message ? e.message : 'Error')); });
-            return true;
-        }
+        try {
+            const saver = getCap('KismetSaver'); if (!saver || !a) return false;
+            const href = a.href || a.getAttribute('href') || '';
+            const dl = a.download || a.getAttribute('download') || ('KISMET_' + Date.now() + '.png');
+            if (!href) return false;
+            if (href.startsWith('data:image/')) {
+                saver.saveImage({ base64: href, filename: dl })
+                    .then(() => { if (typeof showToast === 'function') showToast('✅ Gallery (Pictures/KISMET) ထဲ သိမ်းပြီးပါပြီ'); haptic(); })
+                    .catch(e => { if (typeof showToast === 'function') showToast('⚠️ Gallery Error: ' + (e && e.message ? e.message : 'Failed')); });
+                return true;
+            }
+            if (href.startsWith('blob:')) {
+                fetch(href).then(r => r.blob()).then(b => {
+                    if ((b.type && b.type.startsWith('image/')) || /\.(png|jpg|jpeg|webp)$/i.test(dl)) {
+                        return blobToB64(b).then(url => saver.saveImage({ base64: url, filename: dl }))
+                            .then(() => { if (typeof showToast === 'function') showToast('✅ Gallery (Pictures/KISMET) ထဲ သိမ်းပြီးပါပြီ'); haptic(); });
+                    }
+                    return b.text().then(t => saver.saveFile({ text: t, filename: dl, mime: b.type || 'text/csv' }))
+                        .then(() => { if (typeof showToast === 'function') showToast('✅ Download/KISMET ထဲ သိမ်းပြီးပါပြီ'); haptic(); });
+                }).catch(e => { if (typeof showToast === 'function') showToast('⚠️ Save Error: ' + (e && e.message ? e.message : 'Failed')); });
+                return true;
+            }
+        } catch (e) {}
         return false;
     }
-    const origClick = HTMLAnchorElement.prototype.click;
-    HTMLAnchorElement.prototype.click = function() { if (interceptSave(this)) return; return origClick.apply(this, arguments); };
-    document.addEventListener('click', (e) => { const a = e.target && e.target.closest ? e.target.closest('a[download]') : null; if (a && interceptSave(a)) { e.preventDefault(); e.stopPropagation(); } }, true);
 
-    // 2. CHINA - LASHIO - YANGON PANEL (MOUNTS RIGHT BELOW SEARCH BAR)
-    let panelMethod = 'Air', lastPct = -1;
+    const origClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () { if (interceptSave(this)) return; return origClick.apply(this, arguments); };
+
+    // 2. CHINA - LASHIO - YANGON PANEL
+    let panelMethod = 'Air';
     const MINI_SVGS = {
-        Air: `<svg viewBox="0 0 24 24" fill="white"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" transform="rotate(90 12 12)"/></svg>`,
-        Land: `<svg viewBox="0 0 24 24" fill="white"><path d="M18 18.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-12 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM20 8h-3V4H3a1 1 0 0 0-1 1v11h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-2-3zm-3 1.5h2.2l1.3 2H17v-2z"/></svg>`,
-        Post: `<svg viewBox="0 0 24 24" fill="white"><path d="M12 2C8.69 2 6 4.69 6 8v10h4v4h4v-4h4V8c0-3.31-2.69-6-6-6zm3 7H9V7h6v2zm-5 3h4v1.5h-4V12z"/></svg>`
+        Air: '<svg viewBox="0 0 24 24" fill="white" width="15" height="15"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" transform="rotate(90 12 12)"/></svg>',
+        Land: '<svg viewBox="0 0 24 24" fill="white" width="15" height="15"><path d="M18 18.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-12 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM20 8h-3V4H3a1 1 0 0 0-1 1v11h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-2-3zm-3 1.5h2.2l1.3 2H17v-2z"/></svg>',
+        Post: '<svg viewBox="0 0 24 24" fill="white" width="15" height="15"><path d="M12 2C8.69 2 6 4.69 6 8v10h4v4h4v-4h4V8c0-3.31-2.69-6-6-6zm3 7H9V7h6v2zm-5 3h4v1.5h-4V12z"/></svg>'
     };
 
     function mountRoutePanel() {
-        let p = document.getElementById('kismetRouteAnimPanel');
-        if (!p) {
-            p = document.createElement('div');
-            p.id = 'kismetRouteAnimPanel'; p.className = 'space-y-2';
-            p.innerHTML = `<div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5 min-w-0">
-                    <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0"></span>
-                    <span class="text-[11px] font-extrabold text-white truncate">တရုတ် - လားရှိုး - ရန်ကုန်</span>
+        try {
+            if (document.getElementById('kismetRouteAnimPanel')) return;
+            const p = document.createElement('div');
+            p.id = 'kismetRouteAnimPanel';
+            p.style.cssText = 'margin: 10px 14px 12px 14px; background: #141416; border: 1px solid #2a2a2e; border-radius: 20px; padding: 12px; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.5);';
+            p.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+                        <span style="width:8px;height:8px;border-radius:99px;background:#f26419;display:inline-block;"></span>
+                        <span style="font-size:12px;font-weight:800;color:#fff;">တရုတ် - လားရှိုး - ရန်ကုန်</span>
+                    </div>
+                    <div style="display:flex;gap:4px;">
+                        <button type="button" data-m="Air" class="kra-tab kra-active">✈️ Air</button>
+                        <button type="button" data-m="Land" class="kra-tab">🚚 Land</button>
+                        <button type="button" data-m="Post" class="kra-tab">📮 Post</button>
+                    </div>
                 </div>
-                <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" data-m="Air" class="kra-tab kra-active">✈️ Air</button>
-                    <button type="button" data-m="Land" class="kra-tab">🚚 Land</button>
-                    <button type="button" data-m="Post" class="kra-tab">📮 Post</button>
-                </div></div>
-                <div class="flex items-center gap-3 bg-[#0a0a0c] border border-neutral-800 rounded-2xl px-3 py-2.5">
-                    <div class="flex-1 min-w-0">
-                        <div class="kra-track-wrap"><div class="kra-rail"></div><div id="kraTrailEl" class="kra-trail"></div>
-                            <span class="kra-node kra-node-cn"></span><span class="kra-node kra-node-ls"></span><span class="kra-node kra-node-yg"></span>
+                <div style="display:flex;align-items:center;gap:10px;background:#0a0a0c;border:1px solid #262629;border-radius:16px;padding:10px 12px;">
+                    <div style="flex:1;min-width:0;">
+                        <div class="kra-track-wrap">
+                            <div class="kra-rail"></div>
+                            <div id="kraTrailEl" class="kra-trail"></div>
+                            <span class="kra-node kra-node-cn"></span>
+                            <span class="kra-node kra-node-ls"></span>
+                            <span class="kra-node kra-node-yg"></span>
                             <div id="kraVehicleEl" class="kra-vehicle"><span id="kraVehicleInner">${MINI_SVGS.Air}</span></div>
                         </div>
-                        <div class="flex justify-between text-[10px] font-bold px-0.5 mt-0.5">
-                            <span class="text-neutral-300">တရုတ်</span><span class="text-orange-400">လားရှိုး</span><span class="text-white">ရန်ကုန်</span>
+                        <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;margin-top:2px;">
+                            <span style="color:#d4d4d8;">တရုတ်</span>
+                            <span style="color:#fb923c;">လားရှိုး</span>
+                            <span style="color:#ffffff;">ရန်ကုန်</span>
                         </div>
-                        <div class="flex items-center justify-between gap-2 mt-1.5">
-                            <div id="kraStatusText" class="text-[10px] text-neutral-400 truncate">Air • အသင့်ရှိသည်</div>
-                            <button type="button" id="kraOpenMapBtn" class="px-2 py-0.5 rounded-lg bg-orange-600/20 border border-orange-500/45 text-orange-400 text-[10px] font-extrabold shrink-0">📍 Track မြေပုံ</button>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px;">
+                            <span id="kraStatusText" style="font-size:10px;color:#a3a3a3;">Air • 0 မျိုး • 0.0 Kg</span>
+                            <button type="button" id="kraOpenMapBtn" style="padding:4px 10px;border-radius:8px;background:rgba(242,100,25,0.2);border:1px solid rgba(242,100,25,0.5);color:#fb923c;font-size:10px;font-weight:800;">📍 Track မြေပုံ</button>
                         </div>
                     </div>
-                    <button type="button" id="kraMiniKgBtn" class="shrink-0 flex flex-col items-center pl-2.5 border-l border-neutral-800">
-                        <div class="relative w-14 h-14 flex items-center justify-center">
-                            <svg viewBox="0 0 42 42" class="w-full h-full -rotate-90">
-                                <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#262629" stroke-width="4.5"></circle>
-                                <circle id="kraMiniRingCircle" class="kra-ring-progress" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f26419" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"></circle>
+                    <button type="button" id="kraMiniKgBtn" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-left:10px;border-left:1px solid #262629;background:transparent;border-top:0;border-right:0;border-bottom:0;">
+                        <div style="position:relative;width:54px;height:54px;display:flex;align-items:center;justify-content:center;">
+                            <svg viewBox="0 0 42 42" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#262629" stroke-width="4.5"></circle>
+                                <circle id="kraMiniRingCircle" class="kra-ring-progress" cx="21" cy="21" r="15.915" fill="transparent" stroke="#f26419" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"></circle>
                             </svg>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span id="kraMiniPctText" class="text-[11px] font-extrabold text-white leading-none">0%</span>
-                                <span class="text-[8px] font-bold text-orange-400 mt-0.5">Kg %</span>
+                            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                                <span id="kraMiniPctText" style="font-size:11px;font-weight:800;color:#fff;line-height:1;">0%</span>
+                                <span style="font-size:8px;font-weight:700;color:#fb923c;margin-top:2px;">Kg %</span>
                             </div>
                         </div>
-                        <span id="kraMiniKgText" class="text-[9px] font-bold text-neutral-400 mt-0.5">0.0 Kg</span>
+                        <span id="kraMiniKgText" style="font-size:9px;font-weight:700;color:#a3a3a3;margin-top:2px;">0.0 Kg</span>
                     </button>
                 </div>`;
+
             p.querySelectorAll('.kra-tab').forEach(b => b.addEventListener('click', () => window.KISMET_SET_METHOD(b.getAttribute('data-m'), true)));
             p.querySelector('#kraMiniKgBtn').addEventListener('click', () => { if (typeof switchPage === 'function') switchPage(4); if (typeof switchKgRouteTab === 'function') switchKgRouteTab(panelMethod); });
-            p.querySelector('#kraOpenMapBtn').addEventListener('click', () => { if (window.openKismetTrackModal) window.openKismetTrackModal(null, null, panelMethod); });
+            p.querySelector('#kraOpenMapBtn').addEventListener('click', () => { if (typeof window.openKismetTrackModal === 'function') window.openKismetTrackModal(null, null); });
+
+            // Mount right below search bar, or fallback to top of main/body
+            const searchInput = document.querySelector('input[placeholder*="ရှာ"], input[type="search"]');
+            const searchBox = searchInput ? (searchInput.closest('div.mb-3, div.mb-4, div.px-4, div.relative') || searchInput.parentElement) : null;
+            if (searchBox && searchBox.parentElement) {
+                searchBox.parentElement.insertBefore(p, searchBox.nextSibling);
+            } else {
+                const mainEl = document.querySelector('main') || document.body;
+                mainEl.insertBefore(p, mainEl.firstChild);
+            }
+            window.KISMET_SYNC_PANEL(true);
+        } catch (err) {
+            const errBox = document.createElement('div');
+            errBox.style.cssText = 'position:fixed;top:60px;left:10px;right:10px;z-index:9999;background:#b91c1c;color:#fff;padding:8px;border-radius:8px;font-size:11px;';
+            errBox.innerText = 'KISMET Addon Error: ' + err.message;
+            document.body.appendChild(errBox);
         }
-        if (!p.isConnected) {
-            const searchInp = document.querySelector('input[placeholder*="ပစ္စည်းအမည်"], input[type="search"]');
-            const anchor = searchInp ? (searchInp.closest('div.relative') || searchInp.parentElement) : document.querySelector('main');
-            if (anchor && anchor.parentElement) anchor.parentElement.insertBefore(p, anchor.nextSibling);
-            else document.body.insertBefore(p, document.body.firstChild);
-        }
-        const isShop = typeof currentMainMode !== 'undefined' && currentMainMode === 'shop';
-        p.style.display = isShop ? 'none' : '';
     }
 
-    window.KISMET_SET_METHOD = function(m, replay) {
-        if (!MINI_SVGS[m]) return; panelMethod = m;
+    window.KISMET_SET_METHOD = function (m, replay) {
+        if (!MINI_SVGS[m]) return;
+        panelMethod = m;
         const p = document.getElementById('kismetRouteAnimPanel');
         if (p) {
             p.querySelectorAll('.kra-tab').forEach(b => b.classList.toggle('kra-active', b.getAttribute('data-m') === m));
@@ -115,8 +137,7 @@
         window.KISMET_SYNC_PANEL(replay);
     };
 
-    window.KISMET_SYNC_PANEL = function(replay) {
-        mountRoutePanel();
+    window.KISMET_SYNC_PANEL = function () {
         const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined' && Array.isArray(allRouteRecords[ROUTE_KEY])) ? allRouteRecords[ROUTE_KEY] : [];
         const allKg = list.reduce((s, i) => s + (parseFloat(i.kg) || 0), 0);
         const sub = list.filter(i => (i.method || 'Air') === panelMethod);
@@ -124,39 +145,19 @@
         const pct = allKg > 0 ? (subKg / allKg) * 100 : (list.length > 0 ? (sub.length / list.length) * 100 : 0);
         const st = document.getElementById('kraStatusText'); if (st) st.innerText = `${panelMethod} • ${sub.length} မျိုး • ${subKg.toFixed(1)} Kg`;
         const pe = document.getElementById('kraMiniPctText'), ke = document.getElementById('kraMiniKgText'), rg = document.getElementById('kraMiniRingCircle');
-        if (pe) pe.innerText = `${Math.round(pct)}%`; if (ke) ke.innerText = `${subKg.toFixed(1)} Kg`;
-        if (rg && (replay || Math.abs(pct - lastPct) > 0.2)) {
-            rg.style.transition = 'none'; rg.setAttribute('stroke-dashoffset', '100'); void rg.getBoundingClientRect();
-            requestAnimationFrame(() => requestAnimationFrame(() => { rg.style.transition = ''; rg.setAttribute('stroke-dashoffset', String(Math.max(0, 100 - Math.min(100, pct)))); }));
-            lastPct = pct;
-        }
+        if (pe) pe.innerText = `${Math.round(pct)}%`;
+        if (ke) ke.innerText = `${subKg.toFixed(1)} Kg`;
+        if (rg) rg.setAttribute('stroke-dashoffset', String(Math.max(0, 100 - Math.min(100, pct))));
     };
 
-    // 3. KG% DONUT CIRCLE ANIMATION (AUTO-OBSERVED)
-    let donutLock = false;
-    window.KISMET_ANIMATE_DONUT = function() {
-        if (donutLock) return;
+    window.KISMET_ANIMATE_DONUT = function () {
         const svg = document.getElementById('kgDonutSvg'); if (!svg) return;
-        const slices = Array.from(svg.querySelectorAll('circle')).slice(1); if (!slices.length) return;
-        donutLock = true;
-        slices.forEach(c => { const fd = c.getAttribute('stroke-dasharray'); if (!fd) return; c.style.transition = 'none'; c.setAttribute('stroke-dasharray', '0 100'); c.dataset.fd = fd; });
         svg.classList.remove('kg-donut-popping'); void svg.getBoundingClientRect(); svg.classList.add('kg-donut-popping');
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            slices.forEach((c, i) => { if (!c.dataset.fd) return; c.style.transition = `stroke-dasharray 0.85s cubic-bezier(0.22, 1, 0.36, 1) ${i * 70}ms`; c.setAttribute('stroke-dasharray', c.dataset.fd); });
-            setTimeout(() => { donutLock = false; }, 180);
-        }));
     };
 
-    function bootA() {
-        mountRoutePanel(); window.KISMET_SYNC_PANEL(true);
-        const s = getCap('KismetSaver'); if (s && s.requestMediaPermission) s.requestMediaPermission().catch(() => {});
-        const svg = document.getElementById('kgDonutSvg');
-        if (svg && !svg.dataset.obs) {
-            svg.dataset.obs = '1';
-            new MutationObserver(() => { if (!donutLock) window.KISMET_ANIMATE_DONUT(); }).observe(svg, { childList: true });
-        }
-    }
-    setTimeout(bootA, 150);
-    setInterval(() => { mountRoutePanel(); window.KISMET_SYNC_PANEL(false); }, 1500);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountRoutePanel);
+    else mountRoutePanel();
+    setTimeout(mountRoutePanel, 400);
+    setTimeout(mountRoutePanel, 1200);
 })();
-                                            </script>
+</script>
