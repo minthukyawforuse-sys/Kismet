@@ -24,9 +24,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Prepare Web Files
+      - name: Prepare Web Files & Bundle Icons Offline
         run: |
-          mkdir -p www
+          mkdir -p www/fa www/vendor
           if [ -f "index.html" ]; then
             cp index.html www/index.html
           elif [ -f "KISMET_gate_v8.html" ]; then
@@ -37,10 +37,21 @@ jobs:
           fi
           cp *.png *.jpg *.jpeg www/ 2>/dev/null || true
 
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @fortawesome/fontawesome-free@6 html2canvas@1.4.1
+
+          cp -r node_modules/@fortawesome/fontawesome-free/css node_modules/@fortawesome/fontawesome-free/webfonts www/fa/
+          cp node_modules/html2canvas/dist/html2canvas.min.js www/vendor/html2canvas.min.js
+
+          sed -i 's|https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css|./fa/css/all.min.css|g' www/index.html
+          sed -i 's|https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js|./vendor/html2canvas.min.js|g' www/index.html
+
+          if [ ! -f "1000533185.png" ]; then
+            sed -i 's|<img src="1000533185.png" alt="KISMET" class="h-6 object-contain inline-block">|<span class="text-base font-extrabold tracking-widest text-white">KISMET</span>|g' www/index.html
+          fi
+
       - name: Setup Capacitor Android Project
         run: |
-          npm init -y
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           npx cap init "KISMET" "com.kismet.app" --web-dir www
           npx cap add android
           npx cap sync android
@@ -78,4 +89,4 @@ jobs:
         with:
           name: KISMET-APK
           path: KISMET.apk
-          
+
