@@ -4282,5 +4282,476 @@
     window.addEventListener('resize', () => syncAllLiquidPills(true));
 })();
 </script>
+<!-- ==================== ROUTE (CN-LS-YG) ANIMATION PANEL & KG% CIRCLE SWEEP ==================== -->
+<style>
+    /* Route Animation Compact Panel */
+    #kismetRouteAnimPanel {
+        background-color: #141416;
+        border: 1px solid #262629;
+        border-radius: 1.5rem;
+        padding: 0.85rem 0.9rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    .kra-tab {
+        padding: 0.25rem 0.55rem;
+        border-radius: 0.65rem;
+        font-size: 10px;
+        font-weight: 800;
+        color: #a3a3a3;
+        background: #0a0a0c;
+        border: 1px solid #262629;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .kra-tab.kra-active {
+        background: linear-gradient(135deg, #f26419 0%, #c4420a 65%, #872904 100%);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.18);
+        box-shadow: 0 3px 10px rgba(232, 88, 18, 0.35);
+    }
+    .kra-tab:active { transform: scale(0.92); }
+
+    /* Track & 3 Checkpoints */
+    .kra-track-wrap {
+        position: relative;
+        height: 44px;
+        margin: 8px 14px 2px 14px;
+    }
+    .kra-rail {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 3px;
+        transform: translateY(-50%);
+        background: repeating-linear-gradient(90deg, #323238 0 6px, transparent 6px 11px);
+        border-radius: 999px;
+    }
+    .kra-trail {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        height: 3px;
+        width: 0%;
+        transform: translateY(-50%);
+        background: linear-gradient(90deg, #7a2806 0%, #e85812 55%, #ff8b42 100%);
+        box-shadow: 0 0 10px rgba(255, 122, 41, 0.7);
+        border-radius: 999px;
+        animation: kraTrailMove 6.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+
+    .kra-node {
+        position: absolute;
+        top: 50%;
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+        background: #141416;
+        border: 2.5px solid #52525b;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+    }
+    .kra-node-cn { left: 0%;   animation: kraPulseCN 6.4s ease-in-out infinite; }
+    .kra-node-ls { left: 50%;  animation: kraPulseLS 6.4s ease-in-out infinite; }
+    .kra-node-yg { left: 100%; animation: kraPulseYG 6.4s ease-in-out infinite; }
+
+    /* Moving Vehicle Badge */
+    .kra-vehicle {
+        position: absolute;
+        top: 50%;
+        left: 0%;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: radial-gradient(circle at 30% 25%, #ff853b 0%, #e85812 60%, #872904 100%);
+        border: 1.5px solid rgba(255, 255, 255, 0.55);
+        box-shadow: 0 0 14px rgba(242, 100, 25, 0.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 4;
+        transform: translate(-50%, -50%);
+        will-change: left, transform, opacity;
+        animation: kraVehicleMove 6.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+    .kra-vehicle svg {
+        width: 15px;
+        height: 15px;
+        display: block;
+    }
+
+    /* Vehicle-specific Secondary Motion */
+    .kra-mode-Air .kra-vehicle-inner {
+        animation: kraAirFloat 6.4s ease-in-out infinite;
+    }
+    .kra-mode-Land .kra-vehicle-inner {
+        animation: kraTruckRumble 0.42s ease-in-out infinite;
+    }
+    .kra-mode-Post .kra-vehicle-inner {
+        animation: kraPostHop 0.85s ease-in-out infinite;
+    }
+
+    @keyframes kraVehicleMove {
+        0%   { left: 0%;   opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+        7%   { left: 0%;   opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        42%  { left: 50%;  opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        52%  { left: 50%;  opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        86%  { left: 100%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        94%  { left: 100%; opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        100% { left: 100%; opacity: 0; transform: translate(-50%, -50%) scale(0.72); }
+    }
+    @keyframes kraTrailMove {
+        0%   { width: 0%;   opacity: 0; }
+        7%   { width: 0%;   opacity: 1; }
+        42%  { width: 50%;  opacity: 1; }
+        52%  { width: 50%;  opacity: 1; }
+        86%  { width: 100%; opacity: 1; }
+        94%  { width: 100%; opacity: 1; }
+        100% { width: 100%; opacity: 0; }
+    }
+    @keyframes kraAirFloat {
+        0%, 7%, 42%, 52%, 86%, 100% { transform: translateY(0px) rotate(0deg); }
+        24% { transform: translateY(-6px) rotate(-6deg); }
+        69% { transform: translateY(-6px) rotate(-6deg); }
+    }
+    @keyframes kraTruckRumble {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-1.5px); }
+    }
+    @keyframes kraPostHop {
+        0%, 100% { transform: translateY(0px) rotate(-4deg); }
+        50% { transform: translateY(-3.5px) rotate(4deg); }
+    }
+    @keyframes kraPulseCN {
+        0%, 18%, 100% { border-color: #52525b; box-shadow: none; }
+        6%, 12% { border-color: #ff7a29; background: #ff7a29; box-shadow: 0 0 10px rgba(255, 122, 41, 0.9); }
+    }
+    @keyframes kraPulseLS {
+        0%, 38%, 60%, 100% { border-color: #52525b; background: #141416; box-shadow: none; }
+        44%, 53% { border-color: #ff7a29; background: #ff7a29; box-shadow: 0 0 12px rgba(255, 122, 41, 0.95); }
+    }
+    @keyframes kraPulseYG {
+        0%, 82%, 100% { border-color: #52525b; background: #141416; box-shadow: none; }
+        87%, 95% { border-color: #ffffff; background: #ff7a29; box-shadow: 0 0 12px rgba(255, 122, 41, 0.95); }
+    }
+
+    /* Mini Kg% Circle Ring beside Animation */
+    .kra-ring-progress {
+        transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Page 4 Full Donut Chart 360-Degree Circle Sweep Animation */
+    @keyframes kgDonutCircleForm {
+        0%   { stroke-dashoffset: 100; }
+        100% { stroke-dashoffset: 0; }
+    }
+    .kg-donut-sweep-mask {
+        animation: kgDonutCircleForm 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes kgDonutPop {
+        0%   { opacity: 0.4; transform: rotate(-115deg) scale(0.9); }
+        100% { opacity: 1;   transform: rotate(-90deg) scale(1); }
+    }
+    #kgDonutSvg.kg-donut-popping {
+        animation: kgDonutPop 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+</style>
+
+<script>
+(function initRouteAndKgCircleAnimations() {
+    let activePanelMethod = 'Air';
+    let lastMiniPct = -1;
+
+    const VEHICLE_SVGS = {
+        Air: `<svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" transform="rotate(90 12 12)"/>
+              </svg>`,
+        Land: `<svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M18 18.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-12 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM20 8h-3V4H3a1 1 0 0 0-1 1v11h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-2-3zm-3 1.5h2.2l1.3 2H17v-2z"/>
+              </svg>`,
+        Post: `<svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M12 2C8.69 2 6 4.69 6 8v10h4v4h4v-4h4V8c0-3.31-2.69-6-6-6zm3 7H9V7h6v2zm-5 3h4v1.5h-4V12z"/>
+              </svg>`
+    };
+
+    const METHOD_LABELS = {
+        Air: 'လေယာဉ် (Air)',
+        Land: 'ကား (Land)',
+        Post: 'စာတိုက်ပုံး (Post)'
+    };
+
+    function createRouteAnimPanel() {
+        if (document.getElementById('kismetRouteAnimPanel')) return;
+        const panel = document.createElement('div');
+        panel.id = 'kismetRouteAnimPanel';
+        panel.className = 'kra-mode-Air space-y-2';
+        panel.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0"></span>
+                    <span class="text-[11px] font-extrabold text-white truncate">တရုတ် - လားရှိုး - ရန်ကုန်</span>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" data-kra="Air" class="kra-tab kra-active">✈️ Air</button>
+                    <button type="button" data-kra="Land" class="kra-tab">🚚 Land</button>
+                    <button type="button" data-kra="Post" class="kra-tab">📮 Post</button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-[#0a0a0c] border border-[#222225] rounded-2xl px-3 py-2.5">
+                <div class="flex-1 min-w-0">
+                    <div class="kra-track-wrap">
+                        <div class="kra-rail"></div>
+                        <div id="kraTrailEl" class="kra-trail"></div>
+                        <span class="kra-node kra-node-cn"></span>
+                        <span class="kra-node kra-node-ls"></span>
+                        <span class="kra-node kra-node-yg"></span>
+                        <div id="kraVehicleEl" class="kra-vehicle">
+                            <span id="kraVehicleInner" class="kra-vehicle-inner">${VEHICLE_SVGS.Air}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] font-bold px-0.5 mt-0.5">
+                        <span class="text-neutral-300">တရုတ်</span>
+                        <span class="text-orange-400">လားရှိုး</span>
+                        <span class="text-white">ရန်ကုန်</span>
+                    </div>
+                    <div id="kraStatusText" class="text-[10px] text-neutral-400 mt-1.5 truncate"></div>
+                </div>
+
+                <button type="button" id="kraMiniKgBtn" title="Kg & % စာမျက်နှာသို့ သွားရန်"
+                    class="shrink-0 flex flex-col items-center justify-center pl-2.5 border-l border-neutral-800 btn-bounce">
+                    <div class="relative w-14 h-14 flex items-center justify-center">
+                        <svg viewBox="0 0 42 42" class="w-full h-full -rotate-90">
+                            <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#262629" stroke-width="4.5"></circle>
+                            <circle id="kraMiniRingCircle" class="kra-ring-progress"
+                                cx="21" cy="21" r="15.91549430918954"
+                                fill="transparent" stroke="#f26419" stroke-width="4.5"
+                                stroke-linecap="round"
+                                stroke-dasharray="100 100" stroke-dashoffset="100"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="kraMiniPctText" class="text-[11px] font-extrabold text-white leading-none">0%</span>
+                            <span class="text-[8px] font-bold text-orange-400 mt-0.5">Kg %</span>
+                        </div>
+                    </div>
+                    <span id="kraMiniKgText" class="text-[9px] font-bold text-neutral-400 mt-0.5">0.0 Kg</span>
+                </button>
+            </div>
+        `;
+
+        panel.querySelectorAll('.kra-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setRouteAnimMethod(btn.getAttribute('data-kra'), true);
+            });
+        });
+
+        panel.querySelector('#kraMiniKgBtn').addEventListener('click', () => {
+            if (typeof switchKgRouteTab === 'function') currentKgRouteTab = activePanelMethod;
+            if (typeof switchPage === 'function') switchPage(4);
+            if (typeof switchKgRouteTab === 'function') switchKgRouteTab(activePanelMethod);
+        });
+
+        mountPanelInCurrentView(panel);
+        updateRouteAnimPanelData(true);
+    }
+
+    function mountPanelInCurrentView(panelEl) {
+        const panel = panelEl || document.getElementById('kismetRouteAnimPanel');
+        if (!panel) return;
+
+        const mode = (typeof currentMainMode !== 'undefined') ? currentMainMode : 'dashboard';
+        if (mode === 'shop') {
+            panel.classList.add('hidden');
+            return;
+        }
+        panel.classList.remove('hidden');
+
+        if (mode === 'dashboard') {
+            const dash = document.getElementById('page-dashboard');
+            if (dash && dash.firstElementChild) {
+                if (panel.parentElement !== dash) {
+                    dash.insertBefore(panel, dash.firstElementChild.nextSibling);
+                }
+            }
+        } else if (mode === 'route') {
+            const secRoute = document.getElementById('section-route');
+            if (secRoute && panel.parentElement !== secRoute) {
+                secRoute.insertBefore(panel, secRoute.firstChild);
+            }
+        }
+    }
+
+    function restartVehicleLoop() {
+        const v = document.getElementById('kraVehicleEl');
+        const t = document.getElementById('kraTrailEl');
+        if (!v || !t) return;
+        v.style.animation = 'none';
+        t.style.animation = 'none';
+        void v.offsetWidth;
+        v.style.animation = '';
+        t.style.animation = '';
+    }
+
+    function setRouteAnimMethod(method, forceReplay) {
+        if (!VEHICLE_SVGS[method]) return;
+        const changed = activePanelMethod !== method;
+        activePanelMethod = method;
+
+        const panel = document.getElementById('kismetRouteAnimPanel');
+        if (panel) {
+            panel.classList.remove('kra-mode-Air', 'kra-mode-Land', 'kra-mode-Post');
+            panel.classList.add('kra-mode-' + method);
+            panel.querySelectorAll('.kra-tab').forEach(btn => {
+                btn.classList.toggle('kra-active', btn.getAttribute('data-kra') === method);
+            });
+            const inner = document.getElementById('kraVehicleInner');
+            if (inner) inner.innerHTML = VEHICLE_SVGS[method];
+        }
+        if (changed || forceReplay) restartVehicleLoop();
+        updateRouteAnimPanelData(changed || forceReplay);
+    }
+
+    function updateRouteAnimPanelData(replayRing) {
+        const panel = document.getElementById('kismetRouteAnimPanel');
+        if (!panel) return;
+
+        const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined' && Array.isArray(allRouteRecords[ROUTE_KEY]))
+            ? allRouteRecords[ROUTE_KEY] : [];
+
+        const totalKgAll = list.reduce((s, i) => s + (parseFloat(i.kg) || 0), 0);
+        const sub = list.filter(i => (i.method || 'Air') === activePanelMethod);
+        const subKg = sub.reduce((s, i) => s + (parseFloat(i.kg) || 0), 0);
+        const subArrived = sub.filter(i => i.arrived).length;
+
+        const pct = totalKgAll > 0
+            ? (subKg / totalKgAll) * 100
+            : (list.length > 0 ? (sub.length / list.length) * 100 : 0);
+
+        const statusEl = document.getElementById('kraStatusText');
+        if (statusEl) {
+            statusEl.innerText = sub.length > 0
+                ? `${METHOD_LABELS[activePanelMethod]} • ${sub.length} မျိုး (လားရှိုးရောက် ${subArrived})`
+                : `${METHOD_LABELS[activePanelMethod]} လမ်းကြောင်း • အသင့်ရှိသည်`;
+        }
+
+        const pctEl = document.getElementById('kraMiniPctText');
+        const kgEl = document.getElementById('kraMiniKgText');
+        const ring = document.getElementById('kraMiniRingCircle');
+        if (pctEl) pctEl.innerText = `${Math.round(pct)}%`;
+        if (kgEl) kgEl.innerText = `${subKg.toFixed(1)} Kg`;
+
+        if (ring) {
+            const targetOffset = Math.max(0, 100 - Math.min(100, pct));
+            if (replayRing || Math.abs(pct - lastMiniPct) > 0.2) {
+                ring.style.transition = 'none';
+                ring.setAttribute('stroke-dashoffset', '100');
+                void ring.getBoundingClientRect();
+                requestAnimationFrame(() => {
+                    ring.style.transition = '';
+                    ring.setAttribute('stroke-dashoffset', targetOffset.toFixed(2));
+                });
+                lastMiniPct = pct;
+            }
+        }
+    }
+
+    /* Page 4: Smooth 360-degree Circle Sweep Animation for #kgDonutSvg */
+    function animatePage4DonutCircle() {
+        const svg = document.getElementById('kgDonutSvg');
+        if (!svg) return;
+
+        const ns = 'http://www.w3.org/2000/svg';
+        const existingSlices = Array.from(svg.querySelectorAll('circle')).slice(1);
+        if (existingSlices.length === 0) return;
+
+        const oldDefs = svg.querySelector('defs[data-kg-anim]');
+        if (oldDefs) oldDefs.remove();
+        const oldGroup = svg.querySelector('g[data-kg-anim]');
+        if (oldGroup) {
+            while (oldGroup.firstChild) svg.appendChild(oldGroup.firstChild);
+            oldGroup.remove();
+        }
+
+        const maskId = 'kgDonutSweepMask_' + Date.now();
+        const defs = document.createElementNS(ns, 'defs');
+        defs.setAttribute('data-kg-anim', '1');
+
+        const mask = document.createElementNS(ns, 'mask');
+        mask.setAttribute('id', maskId);
+
+        const sweep = document.createElementNS(ns, 'circle');
+        sweep.setAttribute('cx', '21');
+        sweep.setAttribute('cy', '21');
+        sweep.setAttribute('r', '15.91549430918954');
+        sweep.setAttribute('fill', 'none');
+        sweep.setAttribute('stroke', '#ffffff');
+        sweep.setAttribute('stroke-width', '8');
+        sweep.setAttribute('stroke-dasharray', '100 100');
+        sweep.setAttribute('stroke-dashoffset', '100');
+        sweep.setAttribute('class', 'kg-donut-sweep-mask');
+
+        mask.appendChild(sweep);
+        defs.appendChild(mask);
+
+        const g = document.createElementNS(ns, 'g');
+        g.setAttribute('data-kg-anim', '1');
+        g.setAttribute('mask', `url(#${maskId})`);
+
+        const slicesNow = Array.from(svg.querySelectorAll('circle')).slice(1);
+        slicesNow.forEach(c => g.appendChild(c));
+
+        svg.insertBefore(defs, svg.firstChild);
+        svg.appendChild(g);
+
+        svg.classList.remove('kg-donut-popping');
+        void svg.getBoundingClientRect();
+        svg.classList.add('kg-donut-popping');
+
+        // Also animate item percentage bars smoothly
+        const bars = document.querySelectorAll('#kgCalculatorItemList div[style*="width:"]');
+        bars.forEach(bar => {
+            const finalW = bar.style.width;
+            bar.style.transition = 'none';
+            bar.style.width = '0%';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    bar.style.transition = 'width 0.75s cubic-bezier(0.22, 1, 0.36, 1)';
+                    bar.style.width = finalW;
+                });
+            });
+        });
+    }
+
+    // Hook into existing app functions cleanly without altering their logic
+    if (typeof window.renderPage4KgCalculator === 'function') {
+        const origRenderP4 = window.renderPage4KgCalculator;
+        window.renderPage4KgCalculator = function() {
+            const res = origRenderP4.apply(this, arguments);
+            animatePage4DonutCircle();
+            return res;
+        };
+    }
+
+    if (typeof window.setShippingMethod === 'function') {
+        const origSetMethod = window.setShippingMethod;
+        window.setShippingMethod = function(id, method) {
+            const res = origSetMethod.apply(this, arguments);
+            if (VEHICLE_SVGS[method]) setRouteAnimMethod(method, true);
+            return res;
+        };
+    }
+
+    if (typeof window.switchKgRouteTab === 'function') {
+        const origKgTab = window.switchKgRouteTab;
+        window.switchKgRouteTab = function(tab) {
+            const res = origKgTab.apply(this, arguments);
+            if (VEHICLE_SVGS[tab]) setRouteAnimMethod(tab, true);
+            return res;
+        };
+    }
+
+    if (typeof window.updateNavigationUI === 'function') {
+        const origNav = window.updateNavigationUI;
+        window.updateNavigationUI = function() {
+            const res = origNav.apply(this, argument
 </body>
 </html>
