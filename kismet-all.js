@@ -211,4 +211,6 @@
                 document.getElementById('kraVehIn').innerHTML = MINI_SVGS[panelMethod];
                 syncPanel();
             });
-   
+       setTimeout(() => { mountPanel(); bindItemCards(); }, 250);
+})();
+
