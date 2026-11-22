@@ -211,6 +211,63 @@
                 document.getElementById('kraVehIn').innerHTML = MINI_SVGS[panelMethod];
                 syncPanel();
             });
-       setTimeout(() => { mountPanel(); bindItemCards(); }, 250);
+                   p.querySelector('#kraMapBtn').onclick = () => window.openKismetTrackModal((allRouteRecords[ROUTE_KEY] || [])[0] || null);
+            p.querySelector('#kraKgBtn').onclick = () => { if (typeof switchPage === 'function') switchPage(4); if (typeof switchKgRouteTab === 'function') switchKgRouteTab(panelMethod); };
+            searchEl.parentElement.insertAdjacentElement('afterend', p);
+        }
+        p.style.display = (typeof currentMainMode !== 'undefined' && currentMainMode === 'shop') ? 'none' : 'block';
+        syncPanel();
+    }
+
+    function syncPanel() {
+        const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined') ? (allRouteRecords[ROUTE_KEY] || []) : [];
+        const allKg = list.reduce((s, i) => s + (parseFloat(i.kg) || 0), 0);
+        const sub = list.filter(i => (i.method || 'Air') === panelMethod);
+        const subKg = sub.reduce((s, i) => s + (parseFloat(i.kg) || 0), 0);
+        const pct = allKg > 0 ? (subKg / allKg) * 100 : (list.length > 0 ? (sub.length / list.length) * 100 : 0);
+        const st = document.getElementById('kraStat'); if (st) st.innerText = `${panelMethod} • ${sub.length} မျိုး • ${subKg.toFixed(1)} Kg`;
+        const pe = document.getElementById('kraPct'); if (pe) pe.innerText = Math.round(pct) + '%';
+        const ke = document.getElementById('kraKgTxt'); if (ke) ke.innerText = subKg.toFixed(1) + ' Kg';
+        const rg = document.getElementById('kraRing'); if (rg) rg.setAttribute('stroke-dashoffset', String(Math.max(0, 100 - Math.min(100, pct))));
+    }
+
+    function bindItemCards() {
+        const list = (typeof allRouteRecords !== 'undefined' && typeof ROUTE_KEY !== 'undefined') ? (allRouteRecords[ROUTE_KEY] || []) : [];
+        ['orderListContainer', 'lashioCheckList'].forEach(cid => {
+            const box = document.getElementById(cid); if (!box) return;
+            Array.from(box.children).forEach(card => {
+                if (card.dataset.ktmBound) return;
+                const m = (card.innerHTML || '').match(/(?:transferToShop|toggleLashioArrival)\('([^']+)'/);
+                if (!m) return;
+                card.dataset.ktmBound = '1';
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('button, input, select')) return;
+                    const item = list.find(x => x.id === m[1]);
+                    if (item) window.openKismetTrackModal(item);
+                });
+            });
+        });
+    }
+
+    if (typeof window.renderAll === 'function') {
+        const origRenderAll = window.renderAll;
+        window.renderAll = function () {
+            const r = origRenderAll.apply(this, arguments);
+            mountPanel(); bindItemCards();
+            return r;
+        };
+    }
+    if (typeof window.renderPage4KgCalculator === 'function') {
+        const origP4 = window.renderPage4KgCalculator;
+        window.renderPage4KgCalculator = function () {
+            const r = origP4.apply(this, arguments);
+            const svg = document.getElementById('kgDonutSvg');
+            if (svg) { svg.classList.remove('kg-pop'); void svg.getBoundingClientRect(); svg.classList.add('kg-pop'); }
+            return r;
+        };
+    }
+
+    setTimeout(() => { mountPanel(); bindItemCards(); }, 250);
 })();
 
