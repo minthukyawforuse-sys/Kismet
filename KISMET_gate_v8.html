@@ -4010,5 +4010,277 @@
             }, 3000);
         }
     </script>
+<!-- ==================== APPLE BLUR & LIQUID ANIMATION LAYER ==================== -->
+<style>
+    /* 1. Apple Blur Page Transfer */
+    @keyframes appleBlurTransfer {
+        0% {
+            opacity: 0;
+            filter: blur(14px);
+            transform: translate3d(0, 14px, 0) scale(0.965);
+        }
+        65% {
+            opacity: 1;
+            filter: blur(1.5px);
+        }
+        100% {
+            opacity: 1;
+            filter: blur(0px);
+            transform: translate3d(0, 0, 0) scale(1);
+        }
+    }
+    .apple-blur-transfer {
+        animation: appleBlurTransfer 0.44s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+        will-change: transform, opacity, filter;
+    }
+
+    @keyframes appleBlurSoft {
+        0% {
+            opacity: 0.25;
+            filter: blur(8px);
+            transform: scale(0.98);
+        }
+        100% {
+            opacity: 1;
+            filter: blur(0px);
+            transform: scale(1);
+        }
+    }
+    .apple-blur-soft {
+        animation: appleBlurSoft 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+        will-change: transform, opacity, filter;
+    }
+
+    /* 2. Liquid Sliding Pill Indicator (Preserves Exact Brand Colors) */
+    .liquid-nav-ready > button {
+        position: relative;
+        z-index: 1;
+        transition: color 0.28s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .liquid-nav-ready > button.burnt-orange-btn,
+    .liquid-nav-ready > button.bg-orange-600 {
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .liquid-pill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+        pointer-events: none;
+        will-change: transform, width, height;
+        transition:
+            transform 0.48s cubic-bezier(0.32, 1.28, 0.38, 1),
+            width 0.44s cubic-bezier(0.32, 1.28, 0.38, 1),
+            height 0.44s cubic-bezier(0.32, 1.28, 0.38, 1),
+            border-radius 0.35s ease;
+    }
+    .liquid-pill.liquid-instant {
+        transition: none !important;
+    }
+
+    .liquid-pill-inner {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        position: relative;
+        overflow: hidden;
+        transform-origin: center center;
+        will-change: transform;
+    }
+    .liquid-pill[data-tone="brand"] .liquid-pill-inner {
+        background: linear-gradient(135deg, #f26419 0%, #c4420a 65%, #872904 100%);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow:
+            inset 0 1px 1px rgba(255, 255, 255, 0.38),
+            inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+            0 4px 14px rgba(232, 88, 18, 0.35);
+    }
+    .liquid-pill[data-tone="orange"] .liquid-pill-inner {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow:
+            inset 0 1px 1px rgba(255, 255, 255, 0.34),
+            0 3px 10px rgba(234, 88, 12, 0.32);
+    }
+    .liquid-pill-inner::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0) 100%);
+        pointer-events: none;
+    }
+
+    @keyframes liquidDropletStretch {
+        0%   { transform: scaleX(1) scaleY(1); filter: blur(0px); }
+        32%  { transform: scaleX(1.13) scaleY(0.86); filter: blur(0.6px); }
+        68%  { transform: scaleX(0.96) scaleY(1.04); filter: blur(0px); }
+        100% { transform: scaleX(1) scaleY(1); filter: blur(0px); }
+    }
+    .liquid-pill.liquid-stretching .liquid-pill-inner {
+        animation: liquidDropletStretch 0.46s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* 3. Smooth Modal Backdrop Fade */
+    @keyframes appleBackdropIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    div[id$="Modal"]:not(.hidden) {
+        animation: appleBackdropIn 0.24s ease-out;
+    }
+</style>
+<script>
+(function initAppleLiquidAnimations() {
+    const TAB_GROUPS = [
+        { selector: '#mode-btn-dash', activeClass: 'burnt-orange-btn', tone: 'brand' },
+        { selector: '#nav-btn-0', activeClass: 'burnt-orange-btn', tone: 'brand' },
+        { selector: '#shop-nav-btn-0', activeClass: 'burnt-orange-btn', tone: 'brand' },
+        { selector: '#kg-tab-Air', activeClass: 'bg-orange-600', tone: 'orange' },
+        { selector: '#deli-src-shop', activeClass: 'bg-orange-600', tone: 'orange' }
+    ];
+
+    function getOrCreatePill(container, tone) {
+        let pill = container.querySelector(':scope > .liquid-pill');
+        if (!pill) {
+            if (getComputedStyle(container).position === 'static') {
+                container.style.position = 'relative';
+            }
+            pill = document.createElement('span');
+            pill.className = 'liquid-pill liquid-instant';
+            pill.setAttribute('data-tone', tone);
+            pill.setAttribute('aria-hidden', 'true');
+            pill.innerHTML = '<span class="liquid-pill-inner"></span>';
+            container.insertBefore(pill, container.firstChild);
+        }
+        return pill;
+    }
+
+    function updateLiquidGroup(group, forceInstant) {
+        const sampleBtn = document.querySelector(group.selector);
+        if (!sampleBtn || !sampleBtn.parentElement) return;
+        const container = sampleBtn.parentElement;
+
+        if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+            const existing = container.querySelector(':scope > .liquid-pill');
+            if (existing) existing.dataset.wasHidden = '1';
+            return;
+        }
+
+        const activeBtn = Array.from(container.children).find(
+            el => el.tagName === 'BUTTON' && el.classList.contains(group.activeClass)
+        );
+        if (!activeBtn) return;
+
+        const pill = getOrCreatePill(container, group.tone);
+        const x = activeBtn.offsetLeft;
+        const y = activeBtn.offsetTop;
+        const w = activeBtn.offsetWidth;
+        const h = activeBtn.offsetHeight;
+        const br = getComputedStyle(activeBtn).borderRadius;
+
+        const isFirstPaint = !container.classList.contains('liquid-nav-ready') || pill.dataset.wasHidden === '1';
+        const prevX = parseFloat(pill.dataset.prevX);
+        const moved = !isNaN(prevX) && Math.abs(x - prevX) > 2;
+
+        if (forceInstant || isFirstPaint) {
+            pill.classList.add('liquid-instant');
+        } else {
+            pill.classList.remove('liquid-instant');
+        }
+
+        pill.style.width = w + 'px';
+        pill.style.height = h + 'px';
+        pill.style.borderRadius = br;
+        pill.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        pill.dataset.prevX = String(x);
+        pill.dataset.wasHidden = '0';
+
+        if (!container.classList.contains('liquid-nav-ready')) {
+            container.classList.add('liquid-nav-ready');
+        }
+
+        if (moved && !forceInstant && !isFirstPaint) {
+            pill.classList.remove('liquid-stretching');
+            void pill.offsetWidth;
+            pill.classList.add('liquid-stretching');
+            clearTimeout(pill._stretchTimer);
+            pill._stretchTimer = setTimeout(() => pill.classList.remove('liquid-stretching'), 480);
+        }
+
+        if (forceInstant || isFirstPaint) {
+            requestAnimationFrame(() => pill.classList.remove('liquid-instant'));
+        }
+    }
+
+    function syncAllLiquidPills(forceInstant) {
+        TAB_GROUPS.forEach(g => updateLiquidGroup(g, forceInstant));
+    }
+
+    let lastPageId = null;
+    function triggerAppleBlur(el, cls = 'apple-blur-transfer') {
+        if (!el) return;
+        el.classList.remove('page-transition', 'apple-blur-transfer', 'apple-blur-soft');
+        void el.offsetWidth;
+        el.classList.add(cls);
+        clearTimeout(el._blurTimer);
+        const cleanup = () => el.classList.remove(cls);
+        el.addEventListener('animationend', cleanup, { once: true });
+        el._blurTimer = setTimeout(cleanup, 520);
+    }
+
+    function getActivePageEl() {
+        if (typeof currentMainMode === 'undefined') return null;
+        if (currentMainMode === 'dashboard') return document.getElementById('page-dashboard');
+        if (currentMainMode === 'route') return document.getElementById('page-' + currentPage);
+        if (currentMainMode === 'shop') return document.getElementById('shop-page-' + currentShopPage);
+        return null;
+    }
+
+    if (typeof window.updateNavigationUI === 'function') {
+        const origUpdateNav = window.updateNavigationUI;
+        window.updateNavigationUI = function() {
+            const res = origUpdateNav.apply(this, arguments);
+            const activeEl = getActivePageEl();
+            if (activeEl && activeEl.id !== lastPageId) {
+                if (lastPageId !== null) triggerAppleBlur(activeEl, 'apple-blur-transfer');
+                lastPageId = activeEl.id;
+            }
+            requestAnimationFrame(() => syncAllLiquidPills(false));
+            return res;
+        };
+    }
+
+    if (typeof window.switchKgRouteTab === 'function') {
+        const origKgTab = window.switchKgRouteTab;
+        window.switchKgRouteTab = function() {
+            const res = origKgTab.apply(this, arguments);
+            triggerAppleBlur(document.getElementById('kgCalculatorItemList'), 'apple-blur-soft');
+            requestAnimationFrame(() => syncAllLiquidPills(false));
+            return res;
+        };
+    }
+
+    if (typeof window.switchDeliSourceType === 'function') {
+        const origDeliSrc = window.switchDeliSourceType;
+        window.switchDeliSourceType = function() {
+            const res = origDeliSrc.apply(this, arguments);
+            requestAnimationFrame(() => syncAllLiquidPills(false));
+            return res;
+        };
+    }
+
+    window.addEventListener('load', () => {
+        const activeEl = getActivePageEl();
+        if (activeEl) lastPageId = activeEl.id;
+        setTimeout(() => syncAllLiquidPills(true), 60);
+    });
+    window.addEventListener('resize', () => syncAllLiquidPills(true));
+})();
+</script>
 </body>
 </html>
